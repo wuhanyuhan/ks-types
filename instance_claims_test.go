@@ -85,13 +85,16 @@ func TestInstanceJWT_InvalidSignature(t *testing.T) {
 	priv, _ := loadTestKeys(t)
 
 	claims := InstanceClaims{InstanceID: "inst_bad"}
-	token, _ := SignInstanceJWT(claims, priv, time.Hour)
+	token, err := SignInstanceJWT(claims, priv, time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
 
 	// 用另一对密钥的公钥验证
 	otherPub, _, _ := ed25519.GenerateKey(nil)
 	otherPubPEM := marshalPublicKeyPEM(otherPub)
 
-	_, err := VerifyInstanceJWT(token, otherPubPEM)
+	_, err = VerifyInstanceJWT(token, otherPubPEM)
 	if err == nil {
 		t.Error("expected error for invalid signature")
 	}
@@ -101,9 +104,15 @@ func TestInstanceJWT_Audience(t *testing.T) {
 	priv, pub := loadTestKeys(t)
 
 	claims := InstanceClaims{InstanceID: "inst_aud"}
-	token, _ := SignInstanceJWT(claims, priv, time.Hour)
+	token, err := SignInstanceJWT(claims, priv, time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
 
-	got, _ := VerifyInstanceJWT(token, pub)
+	got, err := VerifyInstanceJWT(token, pub)
+	if err != nil {
+		t.Fatalf("verify: %v", err)
+	}
 	aud := got.Audience
 	if len(aud) != 2 || aud[0] != "ks-hub" || aud[1] != "ks-admin" {
 		t.Errorf("audience: got %v", aud)
