@@ -1,0 +1,30 @@
+# 测试覆盖率产物
+coverage.out
+coverage.html
+*.cover
+*.test
+
+# 编译产物（虽然本项目是 library，但预留）
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# 本地环境变量
+.env
+.env.local
