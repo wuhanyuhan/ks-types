@@ -11,10 +11,32 @@ func TestBizErrorError(t *testing.T) {
 }
 
 func TestPredefinedErrors(t *testing.T) {
-	if ErrTokenInvalid.Code != 40103 {
-		t.Error("ErrTokenInvalid code mismatch")
+	cases := []struct {
+		err      *BizError
+		wantCode int
+	}{
+		{ErrInvalidParams, 40001},
+		{ErrNotFound, 40401},
+		{ErrDuplicate, 40901},
+		{ErrTokenExpired, 40102},
+		{ErrTokenInvalid, 40103},
+		{ErrInstanceInvalid, 40104},
+		{ErrInstanceRevoked, 40105},
+		{ErrForbidden, 40301},
+		{ErrAppNotFound, 40450},
+		{ErrVersionNotFound, 40451},
+		{ErrManifestInvalid, 40953},
+		{ErrManifestIDMismatch, 40954},
+		{ErrChecksumMismatch, 40955},
+		{ErrPermissionInvalid, 40970},
+		{ErrPermissionUnknown, 40971},
+		{ErrStorageUploadFailed, 50301},
+		{ErrStorageDownloadFailed, 50302},
+		{ErrInternalServer, 50000},
 	}
-	if ErrManifestInvalid.Code != 40953 {
-		t.Error("ErrManifestInvalid code mismatch")
+	for _, c := range cases {
+		if c.err.Code != c.wantCode {
+			t.Errorf("%s: got code %d, want %d", c.err.Message, c.err.Code, c.wantCode)
+		}
 	}
 }

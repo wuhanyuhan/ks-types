@@ -26,3 +26,10 @@ func TestPricingTypeValid(t *testing.T) {
 		}
 	}
 }
+
+func TestPricingTypeInvalid(t *testing.T) {
+	invalid := PricingType("unknown")
+	if invalid.Valid() {
+		t.Error("expected unknown PricingType to be invalid")
+	}
+}
