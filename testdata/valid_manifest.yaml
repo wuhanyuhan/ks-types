@@ -1,0 +1,30 @@
+id: my-translator
+name: 智能翻译助手
+version: 1.2.0
+type: service
+summary: 支持 100+ 语言的实时翻译
+description: 详细介绍...
+publisher: "@my-team"
+category: productivity
+tags: [translation, nlp]
+compatibility:
+  keystone: ">=1.5.0"
+pricing:
+  type: free
+runtime:
+  port: 8080
+  health_check: /healthz
+  resources:
+    cpu: "0.5"
+    memory: 512Mi
+permissions:
+  network:
+    level: restricted
+    allowed_domains:
+      - api.deepl.com
+  llm:
+    level: host_proxy
+  filesystem:
+    level: none
+  user_context:
+    level: read
