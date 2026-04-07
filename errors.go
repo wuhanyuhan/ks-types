@@ -4,8 +4,8 @@ import "fmt"
 
 // BizError 业务错误
 type BizError struct {
-	Code    int
-	Message string
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }
 
 func (e *BizError) Error() string {
@@ -53,6 +53,17 @@ var (
 var (
 	ErrInternalServer = &BizError{50000, "服务器内部错误"}
 )
+
+// Newf 构造带格式化 message 的 BizError
+func Newf(code int, format string, args ...any) *BizError {
+	return &BizError{Code: code, Message: fmt.Sprintf(format, args...)}
+}
+
+// Is 判断当前错误是否与目标 BizError 同码（满足 errors.Is 协议）
+func (e *BizError) Is(target error) bool {
+	t, ok := target.(*BizError)
+	return ok && e.Code == t.Code
+}
 
 // HTTPStatus 根据错误码前缀推导 HTTP 状态码
 func (e *BizError) HTTPStatus() int {

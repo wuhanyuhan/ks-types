@@ -1,6 +1,10 @@
 package kstypes
 
-import "testing"
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
 
 func TestBizErrorError(t *testing.T) {
 	err := &BizError{Code: 40001, Message: "参数校验失败"}
@@ -79,5 +83,46 @@ func TestPredefinedErrors(t *testing.T) {
 		if c.err.Code != c.wantCode {
 			t.Errorf("%s: got code %d, want %d", c.err.Message, c.err.Code, c.wantCode)
 		}
+	}
+}
+
+func TestNewf(t *testing.T) {
+	err := Newf(40001, "字段 %s 不能为空", "name")
+	if err.Code != 40001 {
+		t.Errorf("code: got %d", err.Code)
+	}
+	if err.Message != "字段 name 不能为空" {
+		t.Errorf("message: got %q", err.Message)
+	}
+	if err.Error() != "[40001] 字段 name 不能为空" {
+		t.Errorf("Error(): got %q", err.Error())
+	}
+}
+
+func TestBizErrorIs(t *testing.T) {
+	a := &BizError{Code: 40001, Message: "参数校验失败"}
+	b := &BizError{Code: 40001, Message: "不同的消息但同码"}
+	c := &BizError{Code: 40401, Message: "资源不存在"}
+
+	if !a.Is(b) {
+		t.Error("同码 BizError 应匹配")
+	}
+	if a.Is(c) {
+		t.Error("异码 BizError 不应匹配")
+	}
+
+	// 非 BizError 类型
+	if a.Is(fmt.Errorf("普通错误")) {
+		t.Error("非 BizError 不应匹配")
+	}
+}
+
+func TestBizErrorJSON(t *testing.T) {
+	err := &BizError{Code: 40001, Message: "参数校验失败"}
+	data, _ := json.Marshal(err)
+	got := string(data)
+	want := `{"code":40001,"message":"参数校验失败"}`
+	if got != want {
+		t.Errorf("json: got %s, want %s", got, want)
 	}
 }
