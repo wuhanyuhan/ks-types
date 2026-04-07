@@ -12,11 +12,27 @@ compatibility:
 pricing:
   type: free
 runtime:
+  mode: container
+  image: my-team/translator:1.2.0
   port: 8080
+  ports:
+    - "9090:9090"
+  volumes:
+    - /data/models:/models
   health_check: /healthz
   resources:
     cpu: "0.5"
     memory: 512Mi
+dependencies:
+  requires:
+    - id: ks-mcp-lili
+      version: ">=1.0.0"
+  recommends:
+    - id: ks-mcp-writer
+      reason: 提升翻译润色质量
+  conflicts:
+    - id: old-translator
+      reason: 端口冲突
 permissions:
   network:
     level: restricted

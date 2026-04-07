@@ -20,6 +20,7 @@ type ManifestSpec struct {
 	Compatibility CompatibilitySpec         `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
 	Pricing       PricingSpec               `yaml:"pricing,omitempty" json:"pricing,omitempty"`
 	Runtime       RuntimeSpec               `yaml:"runtime,omitempty" json:"runtime,omitempty"`
+	Dependencies  DependenciesSpec          `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 	Permissions   map[string]PermissionDecl `yaml:"permissions,omitempty" json:"permissions,omitempty"`
 }
 
@@ -36,9 +37,40 @@ type PricingSpec struct {
 
 // RuntimeSpec 运行时配置
 type RuntimeSpec struct {
+	Mode        string        `yaml:"mode,omitempty" json:"mode,omitempty"`
+	Entry       string        `yaml:"entry,omitempty" json:"entry,omitempty"`
+	WorkingDir  string        `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
+	Image       string        `yaml:"image,omitempty" json:"image,omitempty"`
 	Port        int           `yaml:"port,omitempty" json:"port,omitempty"`
+	Ports       []string      `yaml:"ports,omitempty" json:"ports,omitempty"`
+	Volumes     []string      `yaml:"volumes,omitempty" json:"volumes,omitempty"`
 	HealthCheck string        `yaml:"health_check,omitempty" json:"health_check,omitempty"`
 	Resources   ResourcesSpec `yaml:"resources,omitempty" json:"resources,omitempty"`
+}
+
+// DependencyItem 必需依赖
+type DependencyItem struct {
+	ID      string `yaml:"id" json:"id"`
+	Version string `yaml:"version,omitempty" json:"version,omitempty"`
+}
+
+// RecommendItem 推荐依赖
+type RecommendItem struct {
+	ID     string `yaml:"id" json:"id"`
+	Reason string `yaml:"reason,omitempty" json:"reason,omitempty"`
+}
+
+// ConflictItem 冲突应用
+type ConflictItem struct {
+	ID     string `yaml:"id" json:"id"`
+	Reason string `yaml:"reason,omitempty" json:"reason,omitempty"`
+}
+
+// DependenciesSpec 依赖声明
+type DependenciesSpec struct {
+	Requires   []DependencyItem `yaml:"requires,omitempty" json:"requires,omitempty"`
+	Recommends []RecommendItem  `yaml:"recommends,omitempty" json:"recommends,omitempty"`
+	Conflicts  []ConflictItem   `yaml:"conflicts,omitempty" json:"conflicts,omitempty"`
 }
 
 // ResourcesSpec 资源限制
