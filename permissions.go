@@ -1,6 +1,9 @@
 package kstypes
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // PermissionDecl 应用在 manifest 中声明的单个权限维度
 type PermissionDecl struct {
@@ -25,6 +28,7 @@ type PermissionWarning struct {
 
 // PermissionRegistry 权限维度注册表
 type PermissionRegistry struct {
+	mu         sync.RWMutex
 	dimensions map[string]PermissionDimension
 }
 
@@ -35,11 +39,16 @@ func NewPermissionRegistry() *PermissionRegistry {
 
 // Register 注册一个权限维度
 func (r *PermissionRegistry) Register(key string, dim PermissionDimension) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.dimensions[key] = dim
 }
 
 // Validate 校验应用声明的权限。返回 warnings（未知维度）和 error（非法 level）。
 func (r *PermissionRegistry) Validate(perms map[string]PermissionDecl) ([]PermissionWarning, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	var warnings []PermissionWarning
 
 	for key, decl := range perms {
@@ -69,6 +78,9 @@ func (r *PermissionRegistry) Validate(perms map[string]PermissionDecl) ([]Permis
 
 // HighRiskPermissions 返回风险权重超过阈值的已声明权限维度
 func (r *PermissionRegistry) HighRiskPermissions(perms map[string]PermissionDecl, threshold int) []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
 	var result []string
 	for key := range perms {
 		if dim, ok := r.dimensions[key]; ok && dim.RiskWeight > threshold {

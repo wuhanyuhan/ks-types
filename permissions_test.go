@@ -1,6 +1,9 @@
 package kstypes
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestPermissionDecl_Basic(t *testing.T) {
 	p := PermissionDecl{
@@ -135,4 +138,47 @@ func TestDefaultPermissionRegistry(t *testing.T) {
 	if len(warnings) != 0 {
 		t.Errorf("Validate: unexpected warnings: %v", warnings)
 	}
+}
+
+func TestPermissionRegistryConcurrency(t *testing.T) {
+	r := DefaultPermissionRegistry()
+
+	done := make(chan struct{})
+	// 并发写：注册新维度
+	go func() {
+		defer func() { done <- struct{}{} }()
+		for i := 0; i < 100; i++ {
+			r.Register(fmt.Sprintf("dim_%d", i), PermissionDimension{
+				DisplayName: fmt.Sprintf("维度%d", i),
+				Levels:      []string{"none", "full"},
+				RiskWeight:  i,
+			})
+		}
+	}()
+
+	// 并发读：校验权限
+	go func() {
+		defer func() { done <- struct{}{} }()
+		for i := 0; i < 100; i++ {
+			perms := map[string]PermissionDecl{
+				"network": {Level: "restricted"},
+			}
+			r.Validate(perms)
+		}
+	}()
+
+	// 并发读：高风险检测
+	go func() {
+		defer func() { done <- struct{}{} }()
+		for i := 0; i < 100; i++ {
+			perms := map[string]PermissionDecl{
+				"filesystem": {Level: "full"},
+			}
+			r.HighRiskPermissions(perms, 5)
+		}
+	}()
+
+	<-done
+	<-done
+	<-done
 }
