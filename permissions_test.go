@@ -97,3 +97,42 @@ func TestHighRiskPermissions(t *testing.T) {
 		t.Errorf("got %q", risks[0])
 	}
 }
+
+func TestDefaultPermissionRegistry(t *testing.T) {
+	r := DefaultPermissionRegistry()
+	if r == nil {
+		t.Fatal("DefaultPermissionRegistry() returned nil")
+	}
+
+	// 验证预置的 4 个维度都已注册
+	expectedDims := []string{"network", "llm", "filesystem", "user_context"}
+	for _, key := range expectedDims {
+		dim, ok := r.dimensions[key]
+		if !ok {
+			t.Errorf("missing dimension %q", key)
+			continue
+		}
+		if len(dim.Levels) == 0 {
+			t.Errorf("dimension %q has no levels", key)
+		}
+		if dim.RiskWeight <= 0 {
+			t.Errorf("dimension %q: RiskWeight should be > 0, got %d", key, dim.RiskWeight)
+		}
+		if dim.DisplayName == "" {
+			t.Errorf("dimension %q has empty DisplayName", key)
+		}
+	}
+
+	// 用一个合法的权限声明验证 Validate 无 error
+	perms := map[string]PermissionDecl{
+		"network": {Level: "restricted"},
+		"llm":     {Level: "host_proxy"},
+	}
+	warnings, err := r.Validate(perms)
+	if err != nil {
+		t.Errorf("Validate: unexpected error: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Errorf("Validate: unexpected warnings: %v", warnings)
+	}
+}
