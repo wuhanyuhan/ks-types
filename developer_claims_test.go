@@ -73,3 +73,35 @@ func TestVerifyDeveloperJWT_MalformedTokens(t *testing.T) {
 		})
 	}
 }
+
+func TestDeveloperJWT_TokenVersion(t *testing.T) {
+	priv, err := os.ReadFile("testdata/test_private.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := os.ReadFile("testdata/test_public.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	claims := DeveloperClaims{
+		UserID:       42,
+		Email:        "test@example.com",
+		DisplayName:  "Test",
+		TokenVersion: 3,
+	}
+
+	token, err := SignDeveloperJWT(claims, priv, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	parsed, err := VerifyDeveloperJWT(token, pub)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if parsed.TokenVersion != 3 {
+		t.Errorf("expected token_version=3, got %d", parsed.TokenVersion)
+	}
+}

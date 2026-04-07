@@ -10,9 +10,10 @@ import (
 // DeveloperClaims 开发者 JWT Claims
 type DeveloperClaims struct {
 	jwt.RegisteredClaims
-	UserID      int64  `json:"user_id"`
-	Email       string `json:"email"`
-	DisplayName string `json:"display_name"`
+	UserID       int64  `json:"user_id"`
+	Email        string `json:"email"`
+	DisplayName  string `json:"display_name"`
+	TokenVersion int    `json:"token_version"`
 }
 
 // SignDeveloperJWT 用 Ed25519 私钥签发开发者 JWT
