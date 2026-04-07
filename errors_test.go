@@ -10,6 +10,47 @@ func TestBizErrorError(t *testing.T) {
 	}
 }
 
+func TestBizErrorHTTPStatus(t *testing.T) {
+	cases := []struct {
+		err        *BizError
+		wantStatus int
+	}{
+		// 400xx → 400
+		{ErrInvalidParams, 400},
+		// 401xx → 401
+		{ErrTokenExpired, 401},
+		{ErrTokenInvalid, 401},
+		{ErrInstanceInvalid, 401},
+		{ErrInstanceRevoked, 401},
+		// 403xx → 403
+		{ErrForbidden, 403},
+		// 404xx → 404
+		{ErrNotFound, 404},
+		{ErrAppNotFound, 404},
+		{ErrVersionNotFound, 404},
+		// 409xx → 409
+		{ErrDuplicate, 409},
+		{ErrManifestInvalid, 409},
+		{ErrManifestIDMismatch, 409},
+		{ErrChecksumMismatch, 409},
+		{ErrPermissionInvalid, 409},
+		{ErrPermissionUnknown, 409},
+		// 500xx → 500
+		{ErrInternalServer, 500},
+		// 503xx → 503
+		{ErrStorageUploadFailed, 503},
+		{ErrStorageDownloadFailed, 503},
+		// 未知码 → 500 兜底
+		{&BizError{99999, "未知错误"}, 500},
+	}
+	for _, c := range cases {
+		got := c.err.HTTPStatus()
+		if got != c.wantStatus {
+			t.Errorf("BizError{%d}.HTTPStatus() = %d, want %d", c.err.Code, got, c.wantStatus)
+		}
+	}
+}
+
 func TestPredefinedErrors(t *testing.T) {
 	cases := []struct {
 		err      *BizError

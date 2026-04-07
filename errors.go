@@ -53,3 +53,26 @@ var (
 var (
 	ErrInternalServer = &BizError{50000, "服务器内部错误"}
 )
+
+// HTTPStatus 根据错误码前缀推导 HTTP 状态码
+func (e *BizError) HTTPStatus() int {
+	prefix := e.Code / 100
+	switch prefix {
+	case 400:
+		return 400
+	case 401:
+		return 401
+	case 403:
+		return 403
+	case 404:
+		return 404
+	case 409:
+		return 409
+	case 500:
+		return 500
+	case 503:
+		return 503
+	default:
+		return 500
+	}
+}
