@@ -389,7 +389,7 @@ func TestRuntimeMode_Valid(t *testing.T) {
 		{RuntimeModeProcess, true},
 		{RuntimeModeContainer, true},
 		{RuntimeMode("invalid"), false},
-		{RuntimeMode(""), false},
+		{RuntimeMode(""), true},
 	}
 	for _, c := range cases {
 		if got := c.mode.Valid(); got != c.valid {

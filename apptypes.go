@@ -47,5 +47,25 @@ var validRuntimeModes = map[RuntimeMode]bool{
 	RuntimeModeNone: true, RuntimeModeProcess: true, RuntimeModeContainer: true,
 }
 
-// Valid 检查 RuntimeMode 是否合法
-func (m RuntimeMode) Valid() bool { return validRuntimeModes[m] }
+// Valid 检查 RuntimeMode 是否合法；空值视为合法（等同 none）
+func (m RuntimeMode) Valid() bool { return m == "" || validRuntimeModes[m] }
+
+// ProtectionLevel 保护级别
+type ProtectionLevel string
+
+const (
+	ProtectionNone         ProtectionLevel = "none"
+	ProtectionPreinstalled ProtectionLevel = "preinstalled"
+	ProtectionProtected    ProtectionLevel = "protected"
+	ProtectionSystem       ProtectionLevel = "system"
+)
+
+var validProtectionLevels = map[ProtectionLevel]bool{
+	ProtectionNone: true, ProtectionPreinstalled: true,
+	ProtectionProtected: true, ProtectionSystem: true,
+}
+
+// Valid 检查 ProtectionLevel 是否合法；空值视为合法（等同 none）
+func (p ProtectionLevel) Valid() bool {
+	return p == "" || validProtectionLevels[p]
+}

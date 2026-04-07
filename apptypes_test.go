@@ -33,3 +33,28 @@ func TestPricingTypeInvalid(t *testing.T) {
 		t.Error("expected unknown PricingType to be invalid")
 	}
 }
+
+func TestProtectionLevelValid(t *testing.T) {
+	valid := []ProtectionLevel{
+		"", ProtectionNone, ProtectionPreinstalled, ProtectionProtected, ProtectionSystem,
+	}
+	for _, p := range valid {
+		if !p.Valid() {
+			t.Errorf("expected %q to be valid", p)
+		}
+	}
+}
+
+func TestProtectionLevelInvalid(t *testing.T) {
+	invalid := ProtectionLevel("unknown")
+	if invalid.Valid() {
+		t.Error("expected unknown ProtectionLevel to be invalid")
+	}
+}
+
+func TestRuntimeModeEmptyIsValid(t *testing.T) {
+	empty := RuntimeMode("")
+	if !empty.Valid() {
+		t.Error("expected empty RuntimeMode to be valid")
+	}
+}
