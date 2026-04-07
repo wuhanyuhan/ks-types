@@ -17,9 +17,11 @@ type ManifestSpec struct {
 	Publisher     string                    `yaml:"publisher,omitempty" json:"publisher,omitempty"`
 	Category      string                    `yaml:"category,omitempty" json:"category,omitempty"`
 	Tags          []string                  `yaml:"tags,omitempty" json:"tags,omitempty"`
+	Protection    string                    `yaml:"protection,omitempty" json:"protection,omitempty"`
 	Compatibility CompatibilitySpec         `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
 	Pricing       PricingSpec               `yaml:"pricing,omitempty" json:"pricing,omitempty"`
 	Runtime       RuntimeSpec               `yaml:"runtime,omitempty" json:"runtime,omitempty"`
+	Mount         MountSpec                 `yaml:"mount,omitempty" json:"mount,omitempty"`
 	Dependencies  DependenciesSpec          `yaml:"dependencies,omitempty" json:"dependencies,omitempty"`
 	Permissions   map[string]PermissionDecl `yaml:"permissions,omitempty" json:"permissions,omitempty"`
 }
@@ -37,15 +39,17 @@ type PricingSpec struct {
 
 // RuntimeSpec 运行时配置
 type RuntimeSpec struct {
-	Mode        string        `yaml:"mode,omitempty" json:"mode,omitempty"`
-	Entry       string        `yaml:"entry,omitempty" json:"entry,omitempty"`
-	WorkingDir  string        `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
-	Image       string        `yaml:"image,omitempty" json:"image,omitempty"`
-	Port        int           `yaml:"port,omitempty" json:"port,omitempty"`
-	Ports       []string      `yaml:"ports,omitempty" json:"ports,omitempty"`
-	Volumes     []string      `yaml:"volumes,omitempty" json:"volumes,omitempty"`
-	HealthCheck string        `yaml:"health_check,omitempty" json:"health_check,omitempty"`
-	Resources   ResourcesSpec `yaml:"resources,omitempty" json:"resources,omitempty"`
+	Mode           string        `yaml:"mode,omitempty" json:"mode,omitempty"`
+	Entry          string        `yaml:"entry,omitempty" json:"entry,omitempty"`
+	WorkingDir     string        `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
+	Image          string        `yaml:"image,omitempty" json:"image,omitempty"`
+	Port           int           `yaml:"port,omitempty" json:"port,omitempty"`
+	Ports          []string      `yaml:"ports,omitempty" json:"ports,omitempty"`
+	Volumes        []string      `yaml:"volumes,omitempty" json:"volumes,omitempty"`
+	HealthCheck    string        `yaml:"health_check,omitempty" json:"health_check,omitempty"`
+	HealthCheckURL string        `yaml:"health_check_url,omitempty" json:"health_check_url,omitempty"`
+	Environment    []string      `yaml:"environment,omitempty" json:"environment,omitempty"`
+	Resources      ResourcesSpec `yaml:"resources,omitempty" json:"resources,omitempty"`
 }
 
 // DependencyItem 必需依赖
@@ -79,6 +83,43 @@ type ResourcesSpec struct {
 	Memory string `yaml:"memory,omitempty" json:"memory,omitempty"`
 }
 
+// MountSpec 安装挂载配置
+type MountSpec struct {
+	Extension *ExtensionMountSpec `yaml:"extension,omitempty" json:"extension,omitempty"`
+	Service   *ServiceMountSpec   `yaml:"service,omitempty" json:"service,omitempty"`
+	Assistant *AssistantMountSpec `yaml:"assistant,omitempty" json:"assistant,omitempty"`
+}
+
+// ExtensionMountSpec extension 类型挂载
+type ExtensionMountSpec struct {
+	MCPServerName       string   `yaml:"mcp_server_name" json:"mcp_server_name"`
+	TransportType       string   `yaml:"transport_type" json:"transport_type"`
+	Endpoint            string   `yaml:"endpoint" json:"endpoint"`
+	DefaultAllowedTools []string `yaml:"default_allowed_tools,omitempty" json:"default_allowed_tools,omitempty"`
+}
+
+// ServiceMountSpec service 类型挂载
+type ServiceMountSpec struct {
+	AutoRegisterMCP bool             `yaml:"auto_register_mcp,omitempty" json:"auto_register_mcp,omitempty"`
+	MCPEndpoint     string           `yaml:"mcp_endpoint,omitempty" json:"mcp_endpoint,omitempty"`
+	CreateAgent     bool             `yaml:"create_agent,omitempty" json:"create_agent,omitempty"`
+	LLMMode         string           `yaml:"llm_mode,omitempty" json:"llm_mode,omitempty"`
+	LLMRequirements *LLMRequirements `yaml:"llm_requirements,omitempty" json:"llm_requirements,omitempty"`
+}
+
+// AssistantMountSpec assistant 类型挂载
+type AssistantMountSpec struct {
+	SystemPrompt string `yaml:"system_prompt,omitempty" json:"system_prompt,omitempty"`
+	RoutingPlan  string `yaml:"routing_plan,omitempty" json:"routing_plan,omitempty"`
+}
+
+// LLMRequirements LLM 能力要求
+type LLMRequirements struct {
+	SupportsVision    bool `yaml:"supports_vision,omitempty" json:"supports_vision,omitempty"`
+	SupportsToolCalls bool `yaml:"supports_tool_calls,omitempty" json:"supports_tool_calls,omitempty"`
+	MinContextTokens  int  `yaml:"min_context_tokens,omitempty" json:"min_context_tokens,omitempty"`
+}
+
 // ParseManifest 从 YAML 字节解析 ManifestSpec
 func ParseManifest(data []byte) (*ManifestSpec, error) {
 	var m ManifestSpec
@@ -105,5 +146,24 @@ func (m *ManifestSpec) Validate() error {
 	if m.Pricing.Type != "" && !m.Pricing.Type.Valid() {
 		return fmt.Errorf("manifest: invalid pricing type %q", m.Pricing.Type)
 	}
+
+	// RuntimeMode 校验（Mode 是 string 类型，通过 RuntimeMode() 转换后校验）
+	if m.Runtime.Mode != "" && !RuntimeMode(m.Runtime.Mode).Valid() {
+		return fmt.Errorf("manifest: invalid runtime mode %q", m.Runtime.Mode)
+	}
+
+	// Protection 校验
+	validProtections := map[string]bool{
+		"": true, "none": true, "preinstalled": true, "protected": true, "system": true,
+	}
+	if !validProtections[m.Protection] {
+		return fmt.Errorf("manifest: invalid protection %q", m.Protection)
+	}
+
+	// extension mount 必须有 mcp_server_name
+	if m.Mount.Extension != nil && m.Mount.Extension.MCPServerName == "" {
+		return fmt.Errorf("manifest: mount.extension.mcp_server_name 为必填项")
+	}
+
 	return nil
 }

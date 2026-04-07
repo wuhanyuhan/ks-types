@@ -283,3 +283,143 @@ func TestManifestSpec_RoundTrip(t *testing.T) {
 		t.Errorf("deps.conflicts: got %v", parsed.Dependencies.Conflicts)
 	}
 }
+
+func TestParseManifest_MountExtension(t *testing.T) {
+	input := `
+id: ext-app
+name: Ext App
+version: 1.0.0
+type: extension
+mount:
+  extension:
+    mcp_server_name: ext-app
+    transport_type: streamable_http
+    endpoint: http://localhost:8080/mcp
+    default_allowed_tools: [greet]
+`
+	m, err := ParseManifest([]byte(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if m.Mount.Extension == nil {
+		t.Fatal("mount.extension 不应为 nil")
+	}
+	if m.Mount.Extension.MCPServerName != "ext-app" {
+		t.Errorf("mcp_server_name: got %q", m.Mount.Extension.MCPServerName)
+	}
+	if m.Mount.Extension.TransportType != "streamable_http" {
+		t.Errorf("transport_type: got %q", m.Mount.Extension.TransportType)
+	}
+	if len(m.Mount.Extension.DefaultAllowedTools) != 1 || m.Mount.Extension.DefaultAllowedTools[0] != "greet" {
+		t.Errorf("default_allowed_tools: got %v", m.Mount.Extension.DefaultAllowedTools)
+	}
+}
+
+func TestParseManifest_MountService(t *testing.T) {
+	input := `
+id: svc-app
+name: Svc App
+version: 1.0.0
+type: service
+mount:
+  service:
+    auto_register_mcp: true
+    mcp_endpoint: http://localhost:8080/mcp
+    llm_mode: keystone_relay
+    llm_requirements:
+      supports_tool_calls: true
+      min_context_tokens: 4000
+`
+	m, err := ParseManifest([]byte(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if m.Mount.Service == nil {
+		t.Fatal("mount.service 不应为 nil")
+	}
+	if !m.Mount.Service.AutoRegisterMCP {
+		t.Error("auto_register_mcp 应为 true")
+	}
+	if m.Mount.Service.MCPEndpoint != "http://localhost:8080/mcp" {
+		t.Errorf("mcp_endpoint: got %q", m.Mount.Service.MCPEndpoint)
+	}
+	if m.Mount.Service.LLMMode != "keystone_relay" {
+		t.Errorf("llm_mode: got %q", m.Mount.Service.LLMMode)
+	}
+	if m.Mount.Service.LLMRequirements == nil {
+		t.Fatal("llm_requirements 不应为 nil")
+	}
+	if !m.Mount.Service.LLMRequirements.SupportsToolCalls {
+		t.Error("supports_tool_calls 应为 true")
+	}
+	if m.Mount.Service.LLMRequirements.MinContextTokens != 4000 {
+		t.Errorf("min_context_tokens: got %d", m.Mount.Service.LLMRequirements.MinContextTokens)
+	}
+}
+
+func TestRuntimeMode_Valid(t *testing.T) {
+	cases := []struct {
+		mode  RuntimeMode
+		valid bool
+	}{
+		{RuntimeModeNone, true},
+		{RuntimeModeProcess, true},
+		{RuntimeModeContainer, true},
+		{RuntimeMode("invalid"), false},
+		{RuntimeMode(""), false},
+	}
+	for _, c := range cases {
+		if got := c.mode.Valid(); got != c.valid {
+			t.Errorf("RuntimeMode(%q).Valid() = %v, want %v", c.mode, got, c.valid)
+		}
+	}
+}
+
+func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
+	m := &ManifestSpec{
+		ID: "test", Name: "test", Version: "1.0.0",
+		Type:    AppTypeService,
+		Runtime: RuntimeSpec{Mode: "invalid"},
+	}
+	if err := m.Validate(); err == nil {
+		t.Error("期望 runtime mode 校验失败")
+	}
+}
+
+func TestValidateManifest_InvalidProtection(t *testing.T) {
+	m := &ManifestSpec{
+		ID: "test", Name: "test", Version: "1.0.0",
+		Type:       AppTypeService,
+		Protection: "invalid",
+	}
+	if err := m.Validate(); err == nil {
+		t.Error("期望 protection 校验失败")
+	}
+}
+
+func TestValidateManifest_ValidProtection(t *testing.T) {
+	for _, p := range []string{"", "none", "preinstalled", "protected", "system"} {
+		m := &ManifestSpec{
+			ID: "test", Name: "test", Version: "1.0.0",
+			Type:       AppTypeService,
+			Protection: p,
+		}
+		if err := m.Validate(); err != nil {
+			t.Errorf("protection %q 应通过校验: %v", p, err)
+		}
+	}
+}
+
+func TestValidateManifest_ExtensionMountMissingName(t *testing.T) {
+	m := &ManifestSpec{
+		ID: "test", Name: "test", Version: "1.0.0",
+		Type: AppTypeExtension,
+		Mount: MountSpec{Extension: &ExtensionMountSpec{
+			TransportType: "streamable_http",
+			Endpoint:      "http://localhost:8080/mcp",
+		}},
+	}
+	if err := m.Validate(); err == nil {
+		t.Error("期望 extension mount 缺少 mcp_server_name 校验失败")
+	}
+}

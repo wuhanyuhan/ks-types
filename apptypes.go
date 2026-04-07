@@ -33,3 +33,19 @@ var validPricingTypes = map[PricingType]bool{
 
 // Valid 检查 PricingType 是否合法
 func (t PricingType) Valid() bool { return validPricingTypes[t] }
+
+// RuntimeMode 运行时模式
+type RuntimeMode string
+
+const (
+	RuntimeModeNone      RuntimeMode = "none"
+	RuntimeModeProcess   RuntimeMode = "process"
+	RuntimeModeContainer RuntimeMode = "container"
+)
+
+var validRuntimeModes = map[RuntimeMode]bool{
+	RuntimeModeNone: true, RuntimeModeProcess: true, RuntimeModeContainer: true,
+}
+
+// Valid 检查 RuntimeMode 是否合法
+func (m RuntimeMode) Valid() bool { return validRuntimeModes[m] }
