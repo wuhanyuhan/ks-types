@@ -17,7 +17,7 @@ type ManifestSpec struct {
 	Publisher     string                    `yaml:"publisher,omitempty" json:"publisher,omitempty"`
 	Category      string                    `yaml:"category,omitempty" json:"category,omitempty"`
 	Tags          []string                  `yaml:"tags,omitempty" json:"tags,omitempty"`
-	Protection    string                    `yaml:"protection,omitempty" json:"protection,omitempty"`
+	Protection    ProtectionLevel           `yaml:"protection,omitempty" json:"protection,omitempty"`
 	Compatibility CompatibilitySpec         `yaml:"compatibility,omitempty" json:"compatibility,omitempty"`
 	Pricing       PricingSpec               `yaml:"pricing,omitempty" json:"pricing,omitempty"`
 	Runtime       RuntimeSpec               `yaml:"runtime,omitempty" json:"runtime,omitempty"`
@@ -39,7 +39,7 @@ type PricingSpec struct {
 
 // RuntimeSpec 运行时配置
 type RuntimeSpec struct {
-	Mode           string        `yaml:"mode,omitempty" json:"mode,omitempty"`
+	Mode           RuntimeMode   `yaml:"mode,omitempty" json:"mode,omitempty"`
 	Entry          string        `yaml:"entry,omitempty" json:"entry,omitempty"`
 	WorkingDir     string        `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
 	Image          string        `yaml:"image,omitempty" json:"image,omitempty"`
@@ -147,16 +147,13 @@ func (m *ManifestSpec) Validate() error {
 		return fmt.Errorf("manifest: invalid pricing type %q", m.Pricing.Type)
 	}
 
-	// RuntimeMode 校验（Mode 是 string 类型，通过 RuntimeMode() 转换后校验）
-	if m.Runtime.Mode != "" && !RuntimeMode(m.Runtime.Mode).Valid() {
+	// RuntimeMode 校验
+	if !m.Runtime.Mode.Valid() {
 		return fmt.Errorf("manifest: invalid runtime mode %q", m.Runtime.Mode)
 	}
 
 	// Protection 校验
-	validProtections := map[string]bool{
-		"": true, "none": true, "preinstalled": true, "protected": true, "system": true,
-	}
-	if !validProtections[m.Protection] {
+	if !m.Protection.Valid() {
 		return fmt.Errorf("manifest: invalid protection %q", m.Protection)
 	}
 

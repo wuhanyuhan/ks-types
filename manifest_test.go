@@ -33,7 +33,7 @@ func TestParseManifest_Valid(t *testing.T) {
 	if m.Pricing.Type != PricingFree {
 		t.Errorf("pricing: got %q", m.Pricing.Type)
 	}
-	if m.Runtime.Mode != "container" {
+	if m.Runtime.Mode != RuntimeModeContainer {
 		t.Errorf("runtime.mode: got %q", m.Runtime.Mode)
 	}
 	if m.Runtime.Image != "my-team/translator:1.2.0" {
@@ -155,7 +155,7 @@ runtime:
 	if err := yaml.Unmarshal([]byte(input), &w); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if w.Runtime.Mode != "process" {
+	if w.Runtime.Mode != RuntimeModeProcess {
 		t.Errorf("mode: got %q", w.Runtime.Mode)
 	}
 	if w.Runtime.Entry != "./bin/myapp" {
@@ -193,7 +193,7 @@ runtime:
 	if err := yaml.Unmarshal([]byte(input), &w); err != nil {
 		t.Fatalf("unmarshal: %v", err)
 	}
-	if w.Runtime.Mode != "container" {
+	if w.Runtime.Mode != RuntimeModeContainer {
 		t.Errorf("mode: got %q", w.Runtime.Mode)
 	}
 	if w.Runtime.Image != "registry.local/myapp:latest" {
@@ -256,7 +256,7 @@ func TestManifestSpec_RoundTrip(t *testing.T) {
 		Version: "2.0.0",
 		Type:    AppTypeSkill,
 		Runtime: RuntimeSpec{
-			Mode:       "container",
+			Mode:       RuntimeModeContainer,
 			Image:      "myimage:latest",
 			Port:       8080,
 			Ports:      []string{"9090:9090"},
@@ -284,7 +284,7 @@ func TestManifestSpec_RoundTrip(t *testing.T) {
 	if parsed.ID != orig.ID {
 		t.Errorf("id: got %q want %q", parsed.ID, orig.ID)
 	}
-	if parsed.Runtime.Mode != "container" {
+	if parsed.Runtime.Mode != RuntimeModeContainer {
 		t.Errorf("runtime.mode: got %q", parsed.Runtime.Mode)
 	}
 	if parsed.Runtime.Image != "myimage:latest" {
@@ -402,7 +402,7 @@ func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
 	m := &ManifestSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type:    AppTypeService,
-		Runtime: RuntimeSpec{Mode: "invalid"},
+		Runtime: RuntimeSpec{Mode: RuntimeMode("invalid")},
 	}
 	if err := m.Validate(); err == nil {
 		t.Error("期望 runtime mode 校验失败")
@@ -410,7 +410,7 @@ func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
 }
 
 func TestValidateManifest_ValidRuntimeMode(t *testing.T) {
-	for _, mode := range []string{"", "none", "process", "container"} {
+	for _, mode := range []RuntimeMode{"", RuntimeModeNone, RuntimeModeProcess, RuntimeModeContainer} {
 		m := &ManifestSpec{
 			ID: "test", Name: "test", Version: "1.0.0",
 			Type:    AppTypeService,
@@ -426,7 +426,7 @@ func TestValidateManifest_InvalidProtection(t *testing.T) {
 	m := &ManifestSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type:       AppTypeService,
-		Protection: "invalid",
+		Protection: ProtectionLevel("invalid"),
 	}
 	if err := m.Validate(); err == nil {
 		t.Error("期望 protection 校验失败")
@@ -434,7 +434,7 @@ func TestValidateManifest_InvalidProtection(t *testing.T) {
 }
 
 func TestValidateManifest_ValidProtection(t *testing.T) {
-	for _, p := range []string{"", "none", "preinstalled", "protected", "system"} {
+	for _, p := range []ProtectionLevel{"", ProtectionNone, ProtectionPreinstalled, ProtectionProtected, ProtectionSystem} {
 		m := &ManifestSpec{
 			ID: "test", Name: "test", Version: "1.0.0",
 			Type:       AppTypeService,
