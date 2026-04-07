@@ -23,6 +23,14 @@ runtime:
   resources:
     cpu: "0.5"
     memory: 512Mi
+mount:
+  service:
+    auto_register_mcp: true
+    mcp_endpoint: "http://localhost:8080/mcp"
+    llm_mode: keystone_relay
+    llm_requirements:
+      supports_tool_calls: true
+      min_context_tokens: 4000
 dependencies:
   requires:
     - id: ks-mcp-lili

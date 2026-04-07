@@ -66,6 +66,29 @@ func TestParseManifest_Valid(t *testing.T) {
 	if len(m.Permissions["network"].AllowedDomains) != 1 {
 		t.Errorf("network domains: got %v", m.Permissions["network"].AllowedDomains)
 	}
+
+	// mount.service
+	if m.Mount.Service == nil {
+		t.Fatal("mount.service 不应为 nil")
+	}
+	if !m.Mount.Service.AutoRegisterMCP {
+		t.Error("mount.service.auto_register_mcp 应为 true")
+	}
+	if m.Mount.Service.MCPEndpoint != "http://localhost:8080/mcp" {
+		t.Errorf("mount.service.mcp_endpoint: got %q", m.Mount.Service.MCPEndpoint)
+	}
+	if m.Mount.Service.LLMMode != "keystone_relay" {
+		t.Errorf("mount.service.llm_mode: got %q", m.Mount.Service.LLMMode)
+	}
+	if m.Mount.Service.LLMRequirements == nil {
+		t.Fatal("mount.service.llm_requirements 不应为 nil")
+	}
+	if !m.Mount.Service.LLMRequirements.SupportsToolCalls {
+		t.Error("llm_requirements.supports_tool_calls 应为 true")
+	}
+	if m.Mount.Service.LLMRequirements.MinContextTokens != 4000 {
+		t.Errorf("llm_requirements.min_context_tokens: got %d", m.Mount.Service.LLMRequirements.MinContextTokens)
+	}
 }
 
 func TestParseManifest_IncompleteFieldsParseOK(t *testing.T) {
@@ -383,6 +406,19 @@ func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
 	}
 	if err := m.Validate(); err == nil {
 		t.Error("期望 runtime mode 校验失败")
+	}
+}
+
+func TestValidateManifest_ValidRuntimeMode(t *testing.T) {
+	for _, mode := range []string{"", "none", "process", "container"} {
+		m := &ManifestSpec{
+			ID: "test", Name: "test", Version: "1.0.0",
+			Type:    AppTypeService,
+			Runtime: RuntimeSpec{Mode: mode},
+		}
+		if err := m.Validate(); err != nil {
+			t.Errorf("runtime mode %q 应通过校验: %v", mode, err)
+		}
 	}
 }
 
