@@ -7,13 +7,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestParseManifest_Valid(t *testing.T) {
+func TestParseAppSpec_Valid(t *testing.T) {
 	data, err := os.ReadFile("testdata/valid_manifest.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	m, err := ParseManifest(data)
+	m, err := ParseAppSpec(data)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -91,9 +91,9 @@ func TestParseManifest_Valid(t *testing.T) {
 	}
 }
 
-func TestParseManifest_IncompleteFieldsParseOK(t *testing.T) {
+func TestParseAppSpec_IncompleteFieldsParseOK(t *testing.T) {
 	data, _ := os.ReadFile("testdata/invalid_manifest.yaml")
-	_, err := ParseManifest(data)
+	_, err := ParseAppSpec(data)
 	if err != nil {
 		t.Fatal("YAML parsing should succeed even for semantically incomplete manifests")
 	}
@@ -101,7 +101,7 @@ func TestParseManifest_IncompleteFieldsParseOK(t *testing.T) {
 
 func TestValidateManifest_Valid(t *testing.T) {
 	data, _ := os.ReadFile("testdata/valid_manifest.yaml")
-	m, _ := ParseManifest(data)
+	m, _ := ParseAppSpec(data)
 	if err := m.Validate(); err != nil {
 		t.Errorf("validate: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestValidateManifest_Valid(t *testing.T) {
 
 func TestValidateManifest_MissingID(t *testing.T) {
 	data, _ := os.ReadFile("testdata/invalid_manifest.yaml")
-	m, _ := ParseManifest(data)
+	m, _ := ParseAppSpec(data)
 	err := m.Validate()
 	if err == nil {
 		t.Error("expected validation error for missing id")
@@ -117,7 +117,7 @@ func TestValidateManifest_MissingID(t *testing.T) {
 }
 
 func TestValidateManifest_InvalidType(t *testing.T) {
-	m := &ManifestSpec{
+	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type: AppType("invalid"),
 	}
@@ -128,7 +128,7 @@ func TestValidateManifest_InvalidType(t *testing.T) {
 }
 
 func TestValidateManifest_InvalidPricing(t *testing.T) {
-	m := &ManifestSpec{
+	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type:    AppTypeService,
 		Pricing: PricingSpec{Type: PricingType("invalid")},
@@ -249,8 +249,8 @@ dependencies:
 	}
 }
 
-func TestManifestSpec_RoundTrip(t *testing.T) {
-	orig := ManifestSpec{
+func TestAppSpec_RoundTrip(t *testing.T) {
+	orig := AppSpec{
 		ID:      "round-trip-test",
 		Name:    "Round Trip",
 		Version: "2.0.0",
@@ -276,7 +276,7 @@ func TestManifestSpec_RoundTrip(t *testing.T) {
 		t.Fatalf("marshal: %v", err)
 	}
 
-	parsed, err := ParseManifest(data)
+	parsed, err := ParseAppSpec(data)
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestManifestSpec_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestParseManifest_MountExtension(t *testing.T) {
+func TestParseAppSpec_MountExtension(t *testing.T) {
 	input := `
 id: ext-app
 name: Ext App
@@ -320,7 +320,7 @@ mount:
     endpoint: http://localhost:8080/mcp
     default_allowed_tools: [greet]
 `
-	m, err := ParseManifest([]byte(input))
+	m, err := ParseAppSpec([]byte(input))
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -338,7 +338,7 @@ mount:
 	}
 }
 
-func TestParseManifest_MountService(t *testing.T) {
+func TestParseAppSpec_MountService(t *testing.T) {
 	input := `
 id: svc-app
 name: Svc App
@@ -353,7 +353,7 @@ mount:
       supports_tool_calls: true
       min_context_tokens: 4000
 `
-	m, err := ParseManifest([]byte(input))
+	m, err := ParseAppSpec([]byte(input))
 	if err != nil {
 		t.Fatalf("parse: %v", err)
 	}
@@ -399,7 +399,7 @@ func TestRuntimeMode_Valid(t *testing.T) {
 }
 
 func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
-	m := &ManifestSpec{
+	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type:    AppTypeService,
 		Runtime: RuntimeSpec{Mode: RuntimeMode("invalid")},
@@ -411,7 +411,7 @@ func TestValidateManifest_InvalidRuntimeMode(t *testing.T) {
 
 func TestValidateManifest_ValidRuntimeMode(t *testing.T) {
 	for _, mode := range []RuntimeMode{"", RuntimeModeNone, RuntimeModeProcess, RuntimeModeContainer} {
-		m := &ManifestSpec{
+		m := &AppSpec{
 			ID: "test", Name: "test", Version: "1.0.0",
 			Type:    AppTypeService,
 			Runtime: RuntimeSpec{Mode: mode},
@@ -423,7 +423,7 @@ func TestValidateManifest_ValidRuntimeMode(t *testing.T) {
 }
 
 func TestValidateManifest_InvalidProtection(t *testing.T) {
-	m := &ManifestSpec{
+	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type:       AppTypeService,
 		Protection: ProtectionLevel("invalid"),
@@ -435,7 +435,7 @@ func TestValidateManifest_InvalidProtection(t *testing.T) {
 
 func TestValidateManifest_ValidProtection(t *testing.T) {
 	for _, p := range []ProtectionLevel{"", ProtectionNone, ProtectionPreinstalled, ProtectionProtected, ProtectionSystem} {
-		m := &ManifestSpec{
+		m := &AppSpec{
 			ID: "test", Name: "test", Version: "1.0.0",
 			Type:       AppTypeService,
 			Protection: p,
@@ -446,8 +446,65 @@ func TestValidateManifest_ValidProtection(t *testing.T) {
 	}
 }
 
+func TestParseAppSpec_Service(t *testing.T) {
+	input := `
+id: test-service
+name: 测试服务
+version: 1.0.0
+type: service
+runtime:
+  mode: container
+  image: "test:1.0"
+mount:
+  service:
+    auto_register_mcp: true
+    mcp_endpoint: "http://localhost:8080/mcp"
+permissions:
+  network:
+    level: none
+`
+	spec, err := ParseAppSpec([]byte(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if spec.ID != "test-service" {
+		t.Errorf("id = %q", spec.ID)
+	}
+	if spec.Mount.Service == nil {
+		t.Fatal("mount.service is nil")
+	}
+	if spec.Mount.Service.MCPEndpoint != "http://localhost:8080/mcp" {
+		t.Errorf("mcp_endpoint = %q", spec.Mount.Service.MCPEndpoint)
+	}
+}
+
+func TestParseAppSpec_Skill(t *testing.T) {
+	input := `
+id: test-skill
+name: 测试技能
+version: 1.0.0
+type: skill
+runtime:
+  mode: none
+mount:
+  skill:
+    name: 测试技能
+    description: 一个测试用 skill
+`
+	spec, err := ParseAppSpec([]byte(input))
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if spec.Mount.Skill == nil {
+		t.Fatal("mount.skill is nil")
+	}
+	if spec.Mount.Skill.Name != "测试技能" {
+		t.Errorf("skill.name = %q", spec.Mount.Skill.Name)
+	}
+}
+
 func TestValidateManifest_ExtensionMountMissingName(t *testing.T) {
-	m := &ManifestSpec{
+	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",
 		Type: AppTypeExtension,
 		Mount: MountSpec{Extension: &ExtensionMountSpec{

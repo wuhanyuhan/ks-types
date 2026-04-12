@@ -6,8 +6,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ManifestSpec 应用 manifest.yaml 的完整结构
-type ManifestSpec struct {
+// AppSpec 应用 manifest.yaml 的完整结构
+type AppSpec struct {
 	ID            string                    `yaml:"id" json:"id"`
 	Name          string                    `yaml:"name" json:"name"`
 	Version       string                    `yaml:"version" json:"version"`
@@ -88,6 +88,7 @@ type MountSpec struct {
 	Extension *ExtensionMountSpec `yaml:"extension,omitempty" json:"extension,omitempty"`
 	Service   *ServiceMountSpec   `yaml:"service,omitempty" json:"service,omitempty"`
 	Assistant *AssistantMountSpec `yaml:"assistant,omitempty" json:"assistant,omitempty"`
+	Skill     *SkillMountSpec     `yaml:"skill,omitempty" json:"skill,omitempty"`
 }
 
 // ExtensionMountSpec extension 类型挂载
@@ -100,15 +101,24 @@ type ExtensionMountSpec struct {
 
 // ServiceMountSpec service 类型挂载
 type ServiceMountSpec struct {
-	AutoRegisterMCP bool             `yaml:"auto_register_mcp,omitempty" json:"auto_register_mcp,omitempty"`
-	MCPEndpoint     string           `yaml:"mcp_endpoint,omitempty" json:"mcp_endpoint,omitempty"`
-	CreateAgent     bool             `yaml:"create_agent,omitempty" json:"create_agent,omitempty"`
-	LLMMode         string           `yaml:"llm_mode,omitempty" json:"llm_mode,omitempty"`
-	LLMRequirements *LLMRequirements `yaml:"llm_requirements,omitempty" json:"llm_requirements,omitempty"`
+	AutoRegisterMCP     bool             `yaml:"auto_register_mcp,omitempty" json:"auto_register_mcp,omitempty"`
+	MCPEndpoint         string           `yaml:"mcp_endpoint,omitempty" json:"mcp_endpoint,omitempty"`
+	DefaultAllowedTools []string         `yaml:"default_allowed_tools,omitempty" json:"default_allowed_tools,omitempty"`
+	CreateAgent         bool             `yaml:"create_agent,omitempty" json:"create_agent,omitempty"`
+	LLMMode             string           `yaml:"llm_mode,omitempty" json:"llm_mode,omitempty"`
+	LLMRequirements     *LLMRequirements `yaml:"llm_requirements,omitempty" json:"llm_requirements,omitempty"`
+}
+
+// SkillMountSpec skill 类型挂载
+type SkillMountSpec struct {
+	Name        string `yaml:"name" json:"name"`
+	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 }
 
 // AssistantMountSpec assistant 类型挂载
 type AssistantMountSpec struct {
+	CreateAgent  bool   `yaml:"create_agent,omitempty" json:"create_agent,omitempty"`
+	Name         string `yaml:"name,omitempty" json:"name,omitempty"`
 	SystemPrompt string `yaml:"system_prompt,omitempty" json:"system_prompt,omitempty"`
 	RoutingPlan  string `yaml:"routing_plan,omitempty" json:"routing_plan,omitempty"`
 }
@@ -120,17 +130,17 @@ type LLMRequirements struct {
 	MinContextTokens  int  `yaml:"min_context_tokens,omitempty" json:"min_context_tokens,omitempty"`
 }
 
-// ParseManifest 从 YAML 字节解析 ManifestSpec
-func ParseManifest(data []byte) (*ManifestSpec, error) {
-	var m ManifestSpec
+// ParseAppSpec 从 YAML 字节解析 AppSpec
+func ParseAppSpec(data []byte) (*AppSpec, error) {
+	var m AppSpec
 	if err := yaml.Unmarshal(data, &m); err != nil {
-		return nil, fmt.Errorf("parse manifest YAML: %w", err)
+		return nil, fmt.Errorf("解析 manifest YAML 失败: %w", err)
 	}
 	return &m, nil
 }
 
-// Validate 校验 ManifestSpec 的必填字段和枚举值
-func (m *ManifestSpec) Validate() error {
+// Validate 校验 AppSpec 的必填字段和枚举值
+func (m *AppSpec) Validate() error {
 	if m.ID == "" {
 		return fmt.Errorf("manifest: id is required")
 	}
