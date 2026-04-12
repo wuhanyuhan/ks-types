@@ -503,6 +503,27 @@ mount:
 	}
 }
 
+func TestAppSpecValidate_SkillMustHaveNoneMode(t *testing.T) {
+	spec := &AppSpec{
+		ID: "s", Name: "S", Version: "1.0.0", Type: AppTypeSkill,
+		Runtime: RuntimeSpec{Mode: RuntimeModeContainer},
+	}
+	if err := spec.Validate(); err == nil {
+		t.Fatal("expected error: skill with container mode")
+	}
+}
+
+func TestAppSpecValidate_SkillMountNotRequired(t *testing.T) {
+	spec := &AppSpec{
+		ID: "s", Name: "S", Version: "1.0.0", Type: AppTypeSkill,
+		Runtime: RuntimeSpec{Mode: RuntimeModeNone},
+	}
+	// skill 不要求 mount.skill 必须存在（纯文件型 skill 没有挂载配置也行）
+	if err := spec.Validate(); err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestValidateManifest_ExtensionMountMissingName(t *testing.T) {
 	m := &AppSpec{
 		ID: "test", Name: "test", Version: "1.0.0",

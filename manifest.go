@@ -167,6 +167,13 @@ func (m *AppSpec) Validate() error {
 		return fmt.Errorf("manifest: invalid protection %q", m.Protection)
 	}
 
+	// skill 类型不能有运行时进程
+	if m.Type == AppTypeSkill {
+		if m.Runtime.Mode != "" && m.Runtime.Mode != RuntimeModeNone {
+			return fmt.Errorf("manifest: type=skill 时 runtime.mode 必须为空或 none")
+		}
+	}
+
 	// extension mount 必须有 mcp_server_name
 	if m.Mount.Extension != nil && m.Mount.Extension.MCPServerName == "" {
 		return fmt.Errorf("manifest: mount.extension.mcp_server_name 为必填项")
