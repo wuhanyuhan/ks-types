@@ -32,7 +32,7 @@ var (
 	ErrForbidden = &BizError{40301, "无权访问"}
 )
 
-// 应用错误 (4045x/4095x)
+// 应用错误 (4045x/4095x/4097x)
 var (
 	ErrAppNotFound        = &BizError{40450, "应用不存在"}
 	ErrVersionNotFound    = &BizError{40451, "版本不存在"}

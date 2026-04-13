@@ -8,7 +8,7 @@ Keystone（KS）平台的共享 Go 类型库：统一错误码、Ed25519 JWT、M
 
 - **统一错误码**：`BizError` + 分段常量（`40xxx`/`50xxx`），方便前端映射与日志聚合。
 - **Ed25519 JWT**：提供实例 JWT（`InstanceClaims`）与开发者 JWT（`DeveloperClaims`）的签发/校验，算法锁定 `EdDSA`。
-- **Manifest 解析**：`ManifestSpec` 同时带 `yaml` 和 `json` tag，内建 `Validate()`。
+- **Manifest 解析**：`AppSpec` 同时带 `yaml` 和 `json` tag，内建 `Validate()`。
 - **权限注册表**：`PermissionRegistry` 支持动态注册维度、未知维度告警、非法 level 报错、高风险权限检测。
 - **Gin 中间件**：`ginmw.InstanceJWTMiddleware` 读取 `Authorization: Bearer`，支持可选的吊销回调。
 
@@ -49,7 +49,7 @@ fmt.Println(claims.InstanceID, claims.Name)
 
 ```go
 data, _ := os.ReadFile("manifest.yaml")
-m, err := kstypes.ParseManifest(data)
+m, err := kstypes.ParseAppSpec(data)
 if err != nil { /* ... */ }
 if err := m.Validate(); err != nil { /* ... */ }
 ```
@@ -130,6 +130,8 @@ c.JSON(http.StatusNotFound, gin.H{
 ├── instance_claims.go     # 实例 JWT
 ├── developer_claims.go    # 开发者 JWT
 ├── manifest.go            # Manifest 结构体与校验
+├── install.go             # InstallSpec 安装规格
+├── result.go              # Result / PageResult / ListResult 通用响应
 ├── permissions.go         # 权限注册表
 ├── ginmw/                 # Gin 中间件
 └── testdata/              # 测试用 PEM 与 manifest 样例

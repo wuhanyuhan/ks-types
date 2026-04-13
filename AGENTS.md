@@ -10,7 +10,10 @@
 - 统一业务错误码（`BizError`）
 - Ed25519 密钥加载与 PEM 解析
 - **实例 JWT**（`InstanceClaims`）与 **开发者 JWT**（`DeveloperClaims`）的签发/校验
-- 应用 `manifest.yaml` 结构体（`ManifestSpec`）与校验
+- 应用 `manifest.yaml` 结构体（`AppSpec`）与校验
+- 安装规格（`InstallSpec`）
+- 通用响应结构（`Result` / `PageResult` / `ListResult`）
+- 运行时模式（`RuntimeMode`）与保护级别（`ProtectionLevel`）
 - 权限维度注册表（`PermissionRegistry`）与高风险权限检测
 - Gin 中间件 `ginmw.InstanceJWTMiddleware`（含吊销检查钩子）
 
@@ -25,7 +28,9 @@
 ├── jwt.go                 # Ed25519 PEM 加载/解析
 ├── instance_claims.go     # 实例 JWT 签发/校验
 ├── developer_claims.go    # 开发者 JWT 签发/校验
-├── manifest.go            # ManifestSpec + YAML 解析 + Validate
+├── manifest.go            # AppSpec + YAML 解析 + Validate
+├── install.go             # InstallSpec 安装规格
+├── result.go              # Result / PageResult / ListResult 通用响应
 ├── permissions.go         # PermissionRegistry + DefaultPermissionRegistry
 ├── ginmw/
 │   └── instance_jwt.go    # Gin 中间件：InstanceJWTMiddleware
@@ -55,9 +60,10 @@
   - Developer JWT: `iss=ks-hub`, `aud=[ks-hub]`
 - 公私钥必须是 PKCS#8 + PKIX 格式的 PEM。
 
-### 3. Manifest
-- 字段同时带 `yaml` 和 `json` tag，保证 YAML 解析与 JSON 序列化都可用。
+### 3. AppSpec
+- `AppSpec` 是应用 manifest 的顶层结构体，字段同时带 `yaml` 和 `json` tag，保证 YAML 解析与 JSON 序列化都可用。
 - `Validate()` 只校验必填字段与枚举合法性；与权限注册表的交叉校验由调用方通过 `PermissionRegistry.Validate` 完成。
+- `MountSpec` 下包含 `ExtensionMountSpec`、`ServiceMountSpec`、`SkillMountSpec`、`AssistantMountSpec` 等子结构。
 
 ### 4. 权限
 - 权限维度通过 `PermissionRegistry.Register` 动态注册。`DefaultPermissionRegistry()` 预置了 `network / llm / filesystem / user_context` 四项。
