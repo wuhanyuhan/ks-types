@@ -1,0 +1,14 @@
+id: demo-legacy-service
+name: Demo Legacy Service
+version: 1.0.0
+type: service
+runtime:
+  mode: container
+  port: 9990
+  image: "demo-legacy-service:1.0.0"
+mount:
+  service:
+    auto_register_mcp: true
+    mcp_endpoint: "http://localhost:9990/mcp"
+    auth_mode: none
+    llm_mode: none

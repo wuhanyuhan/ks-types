@@ -537,3 +537,65 @@ func TestValidateManifest_ExtensionMountMissingName(t *testing.T) {
 		t.Error("期望 extension mount 缺少 mcp_server_name 校验失败")
 	}
 }
+
+func TestParseAppSpec_AuthModeKeystoneJWKS(t *testing.T) {
+	data, err := os.ReadFile("testdata/manifest_auth_jwks.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := ParseAppSpec(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if m.Mount.Service == nil {
+		t.Fatal("mount.service 应非空")
+	}
+	if m.Mount.Service.AuthMode != AuthModeKeystoneJWKS {
+		t.Errorf("auth_mode: got %q, want %q", m.Mount.Service.AuthMode, AuthModeKeystoneJWKS)
+	}
+	if err := m.Validate(); err != nil {
+		t.Errorf("Validate 应通过: %v", err)
+	}
+}
+
+func TestParseAppSpec_AuthModeNone(t *testing.T) {
+	data, err := os.ReadFile("testdata/manifest_auth_none.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := ParseAppSpec(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if m.Mount.Service == nil {
+		t.Fatal("mount.service 应非空")
+	}
+	if m.Mount.Service.AuthMode != AuthModeNone {
+		t.Errorf("auth_mode: got %q, want %q", m.Mount.Service.AuthMode, AuthModeNone)
+	}
+	if err := m.Validate(); err != nil {
+		t.Errorf("Validate 应通过: %v", err)
+	}
+}
+
+func TestParseAppSpec_AuthModeOmitted(t *testing.T) {
+	// 使用现有的 valid_manifest.yaml（不含 auth_mode）
+	data, err := os.ReadFile("testdata/valid_manifest.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := ParseAppSpec(data)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	// 不含字段时应解析为空串，Default() 给 none
+	if m.Mount.Service == nil {
+		t.Skip("该测试数据无 service mount，跳过")
+	}
+	if m.Mount.Service.AuthMode != "" {
+		t.Errorf("缺省 auth_mode 应为空串，got %q", m.Mount.Service.AuthMode)
+	}
+	if m.Mount.Service.AuthMode.Default() != AuthModeNone {
+		t.Errorf("缺省 auth_mode 的 Default() 应为 none")
+	}
+}

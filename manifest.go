@@ -107,6 +107,9 @@ type ServiceMountSpec struct {
 	CreateAgent         bool             `yaml:"create_agent,omitempty" json:"create_agent,omitempty"`
 	LLMMode             string           `yaml:"llm_mode,omitempty" json:"llm_mode,omitempty"`
 	LLMRequirements     *LLMRequirements `yaml:"llm_requirements,omitempty" json:"llm_requirements,omitempty"`
+	// AuthMode /mcp 端点鉴权模式。空字符串等价于 AuthModeNone。
+	// 生产推荐使用 keystone_jwks；本地 / 不可签发场景用 none 或 static_bearer。
+	AuthMode AuthMode `yaml:"auth_mode,omitempty" json:"auth_mode,omitempty"`
 }
 
 // SkillMountSpec skill 类型挂载

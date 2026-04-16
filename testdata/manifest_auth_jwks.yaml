@@ -1,0 +1,15 @@
+id: demo-auth-service
+name: Demo Auth Service
+version: 1.0.0
+type: service
+summary: 演示 auth_mode=keystone_jwks 的 manifest
+runtime:
+  mode: container
+  port: 9994
+  image: "demo-auth-service:1.0.0"
+mount:
+  service:
+    auto_register_mcp: true
+    mcp_endpoint: "http://localhost:9994/mcp"
+    auth_mode: keystone_jwks
+    llm_mode: none
