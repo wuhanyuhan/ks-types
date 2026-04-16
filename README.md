@@ -120,6 +120,30 @@ c.JSON(http.StatusNotFound, gin.H{
 
 完整错误码列表见 [`errors.go`](errors.go)。
 
+## AuthMode: MCP Service 鉴权模式
+
+从 v0.4.0 起，`mount.service.auth_mode` 声明 MCP service 的 /mcp 端点
+鉴权模式。三种合法值：
+
+| 值 | 语义 |
+|----|-----|
+| `none` | /mcp 端点不做鉴权，依赖网络边界（内网 + keystone 是唯一调用方） |
+| `keystone_jwks` | 通过 keystone /.well-known/jwks.json 验证 RS256 JWT（推荐） |
+| `static_bearer` | 比对静态 Bearer（调用方在 keystone 侧注入 auth_headers） |
+
+默认值：空字符串（YAML 中省略）等价于 `none`，通过 `AuthMode.Default()` 归一。
+
+### 生态消费者
+
+- **ks-devkit SDK (ksapp)**: `ksapp.WithKeystoneAuth()` 按 manifest 的 auth_mode
+  挂载 JWKSVerifier；strict-by-default（auth_mode=keystone_jwks 且
+  `KEYSTONE_JWKS_URL` 为空时启动 panic）
+- **ks-squad-framework**: bootstrap 默认启用同等行为
+- **keystone**: MCP proxy 按 `t_mcp_servers.auth_mode` 决定是否为调用
+  动态签发 JWT 并注入 Authorization header
+
+详见 `docs/ecosystem/standards/service-auth-convention.md`（keystone 仓库）。
+
 ## 目录结构
 
 ```
