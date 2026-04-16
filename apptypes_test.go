@@ -58,3 +58,34 @@ func TestRuntimeModeEmptyIsValid(t *testing.T) {
 		t.Error("expected empty RuntimeMode to be valid")
 	}
 }
+
+func TestAuthMode_Valid(t *testing.T) {
+	cases := []struct {
+		name string
+		mode AuthMode
+		want bool
+	}{
+		{"none", AuthModeNone, true},
+		{"keystone_jwks", AuthModeKeystoneJWKS, true},
+		{"static_bearer", AuthModeStaticBearer, true},
+		{"empty", AuthMode(""), true}, // 空字符串合法（表示取默认值 none）
+		{"invalid", AuthMode("invalid_mode"), false},
+		{"uppercase", AuthMode("KEYSTONE_JWKS"), false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if got := c.mode.Valid(); got != c.want {
+				t.Errorf("AuthMode(%q).Valid() = %v, want %v", c.mode, got, c.want)
+			}
+		})
+	}
+}
+
+func TestAuthMode_Default(t *testing.T) {
+	if AuthMode("").Default() != AuthModeNone {
+		t.Errorf("empty AuthMode 的 Default 应为 none")
+	}
+	if AuthModeKeystoneJWKS.Default() != AuthModeKeystoneJWKS {
+		t.Errorf("非空 AuthMode 的 Default 应返回自身")
+	}
+}
