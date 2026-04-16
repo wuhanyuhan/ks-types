@@ -170,6 +170,11 @@ func (m *AppSpec) Validate() error {
 		return fmt.Errorf("manifest: invalid protection %q", m.Protection)
 	}
 
+	// service mount 的 auth_mode 校验
+	if m.Mount.Service != nil && !m.Mount.Service.AuthMode.Valid() {
+		return fmt.Errorf("manifest: invalid mount.service.auth_mode %q", m.Mount.Service.AuthMode)
+	}
+
 	// skill 类型不能有运行时进程
 	if m.Type == AppTypeSkill {
 		if m.Runtime.Mode != "" && m.Runtime.Mode != RuntimeModeNone {

@@ -1,0 +1,12 @@
+id: demo-invalid
+name: Demo Invalid
+version: 1.0.0
+type: service
+runtime:
+  mode: container
+  port: 9990
+  image: "demo-invalid:1.0.0"
+mount:
+  service:
+    mcp_endpoint: "http://localhost:9990/mcp"
+    auth_mode: bogus_mode

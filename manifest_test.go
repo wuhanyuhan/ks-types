@@ -2,6 +2,7 @@ package kstypes
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"gopkg.in/yaml.v3"
@@ -597,5 +598,23 @@ func TestParseAppSpec_AuthModeOmitted(t *testing.T) {
 	}
 	if m.Mount.Service.AuthMode.Default() != AuthModeNone {
 		t.Errorf("缺省 auth_mode 的 Default() 应为 none")
+	}
+}
+
+func TestValidate_InvalidAuthMode(t *testing.T) {
+	data, err := os.ReadFile("testdata/manifest_auth_invalid.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := ParseAppSpec(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = m.Validate()
+	if err == nil {
+		t.Fatal("期望 Validate 失败，但通过了")
+	}
+	if !strings.Contains(err.Error(), "auth_mode") {
+		t.Errorf("错误信息应包含 auth_mode，got: %v", err)
 	}
 }
