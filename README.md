@@ -133,6 +133,20 @@ c.JSON(http.StatusNotFound, gin.H{
 
 默认值：空字符串（YAML 中省略）等价于 `none`，通过 `AuthMode.Default()` 归一。
 
+### Extension mount 用例
+
+`type: extension` 的应用也可以声明 `auth_mode`（自 v0.4.1 起）：
+
+```yaml
+type: extension
+mount:
+  extension:
+    mcp_server_name: my-ext
+    transport_type: streamable_http
+    endpoint: "http://localhost:9991/mcp"
+    auth_mode: keystone_jwks
+```
+
 ### 生态消费者
 
 - **ks-devkit SDK (ksapp)**: `ksapp.WithKeystoneAuth()` 按 manifest 的 auth_mode

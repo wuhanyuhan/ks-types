@@ -97,6 +97,9 @@ type ExtensionMountSpec struct {
 	TransportType       string   `yaml:"transport_type" json:"transport_type"`
 	Endpoint            string   `yaml:"endpoint" json:"endpoint"`
 	DefaultAllowedTools []string `yaml:"default_allowed_tools,omitempty" json:"default_allowed_tools,omitempty"`
+	// AuthMode /mcp 端点鉴权模式。空字符串等价于 AuthModeNone。
+	// 生产推荐使用 keystone_jwks；本地 / 不可签发场景用 none 或 static_bearer。
+	AuthMode AuthMode `yaml:"auth_mode,omitempty" json:"auth_mode,omitempty"`
 }
 
 // ServiceMountSpec service 类型挂载
@@ -173,6 +176,11 @@ func (m *AppSpec) Validate() error {
 	// service mount 的 auth_mode 校验
 	if m.Mount.Service != nil && !m.Mount.Service.AuthMode.Valid() {
 		return fmt.Errorf("manifest: invalid mount.service.auth_mode %q", m.Mount.Service.AuthMode)
+	}
+
+	// extension mount 的 auth_mode 校验
+	if m.Mount.Extension != nil && !m.Mount.Extension.AuthMode.Valid() {
+		return fmt.Errorf("manifest: invalid mount.extension.auth_mode %q", m.Mount.Extension.AuthMode)
 	}
 
 	// skill 类型不能有运行时进程

@@ -618,3 +618,35 @@ func TestValidate_InvalidAuthMode(t *testing.T) {
 		t.Errorf("错误信息应包含 auth_mode，got: %v", err)
 	}
 }
+
+func TestExtensionMountSpec_AuthMode_Valid(t *testing.T) {
+	m := &AppSpec{
+		ID: "x", Name: "x", Version: "1", Type: AppTypeExtension,
+		Runtime: RuntimeSpec{Mode: RuntimeModeContainer},
+		Mount: MountSpec{
+			Extension: &ExtensionMountSpec{
+				MCPServerName: "x",
+				AuthMode:      AuthModeKeystoneJWKS,
+			},
+		},
+	}
+	if err := m.Validate(); err != nil {
+		t.Fatalf("期望合法，实际 error: %v", err)
+	}
+}
+
+func TestExtensionMountSpec_AuthMode_Invalid(t *testing.T) {
+	m := &AppSpec{
+		ID: "x", Name: "x", Version: "1", Type: AppTypeExtension,
+		Runtime: RuntimeSpec{Mode: RuntimeModeContainer},
+		Mount: MountSpec{
+			Extension: &ExtensionMountSpec{
+				MCPServerName: "x",
+				AuthMode:      AuthMode("bogus"),
+			},
+		},
+	}
+	if err := m.Validate(); err == nil {
+		t.Fatal("期望非法 auth_mode 校验失败")
+	}
+}

@@ -1,5 +1,15 @@
 # Changelog
 
+## [v0.4.1] - 2026-04-17
+
+### Added
+- `ExtensionMountSpec.AuthMode` 字段（对齐 `ServiceMountSpec.AuthMode`）
+- `Validate()` 加 extension mount auth_mode 合法性校验
+
+### Rationale
+ks-mcp-image-gen 是 type=extension 且需启用 keystone_jwks 鉴权的首个场景；
+原先只有 service mount 有 auth_mode 字段，extension 无法声明。
+
 ## [0.4.0] - 2026-04-17
 
 ### Added
