@@ -1,5 +1,23 @@
 # Changelog
 
+## [v0.5.0] - 2026-04-24
+
+### Added
+
+- `MetaResponse.Nav` (`*MetaNavDecl`) — MCP 自声明左侧菜单项（label / icon / category / order / open_mode / entry_path / required_perms）
+- `MetaResponse.Permissions` (`[]MetaPermissionDecl`) — 权限码目录数组
+- `MetaResponse.ConfigMode` — `schema` / `iframe` / `none` 枚举（与既有 `ConfigUI` 字段并存，详见 meta.go 注释中"v0.5.0 共存约定"）
+- `MetaResponse.ProtocolVersion` — SemVer MAJOR.MINOR，MVP `1.0`
+- `MetaResponse.ConfigStatus` — `unconfigured` / `via_frontend` / `via_cli` / `mixed`（由 Spec A §6.4 引入）
+
+### Ecosystem
+
+Spec B（MCP 前端鉴权与导航统一）的前置契约。Go 消费方直接 `go get -u github.com/wuhanyuhan/ks-types@v0.5.0`；Python / TS / squad-framework 各自手写镜像同步（见 keystone Spec B 子 plan Task 1.b/1.c/1.d）。
+
+### Breaking Changes
+
+无。所有变更为 `omitempty` 可选字段；旧消费者解析未含新字段的响应行为完全不变。
+
 ## [v0.4.1] - 2026-04-17
 
 ### Added
