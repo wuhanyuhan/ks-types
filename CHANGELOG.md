@@ -1,5 +1,29 @@
 # Changelog
 
+## [v0.6.0] - 2026-04-19
+
+### Added
+
+- 新增 `config_schema.go`（Spec A §8 端点契约）：
+  - `ConfigSchemaResponse` — MCP `/config-schema` 端点响应 data 字段
+  - `ConfigPubkeyResponse` — MCP `/config-pubkey` 端点响应 data 字段
+  - `EncryptedConfigPayload` — `POST /ks-config/save` 与 `/validate` 的 request body
+  - `ConfigApplyResult` — `POST /ks-config/save` 成功响应 data 字段
+  - `AADCanonicalBytes(mcpID string, version uint64, fingerprint string) []byte` — spec-v1 §2.1 canonical AAD 字节序列化 helper
+  - `Fingerprint(pubkey []byte) string` — spec-v1 §4.1 X25519 公钥指纹 helper
+
+### Tests
+
+- `config_schema_test.go`：内联 12 条 `aad_canonical` testvectors（来自 ks-devkit conformance/config-schema/testvectors.json）+ 4 条 `Fingerprint` 断言，全量字节级对齐验证
+
+### Ecosystem
+
+Spec A（MCP 配置 Schema + E2E 加密协议）的共享契约前置。消费方：`ks-devkit/sdk/go`（go.mod replace 过渡）、`ks-devkit/sdk/typescript`（types.ts 镜像 v0.3.0）、`ks-devkit/sdk/python`（pydantic 镜像 config_schema.py）、`ks-squad-framework`（被动升级）。
+
+### Breaking Changes
+
+无。所有变更为新增类型和函数；旧消费者无需修改。
+
 ## [v0.5.0] - 2026-04-24
 
 ### Added
