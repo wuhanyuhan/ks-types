@@ -234,3 +234,55 @@ func TestVerifyAttestation_KidMismatch(t *testing.T) {
 		t.Error("expected error for kid mismatch")
 	}
 }
+
+// signCraftedAttestation 用 Ed25519 私钥手工构造一份 attestation token，
+// 允许测试覆盖 SignAttestation 不会产生但 verify 必须挡住的篡改场景。
+//
+// headerOverrides / claimsOverrides 会原样合入 header / payload，nil 则不覆写。
+func signCraftedAttestation(t *testing.T, privPEM []byte, headerOverrides, claimsOverrides map[string]any) string {
+	t.Helper()
+	priv, err := ParseEd25519PrivateKeyPEM(privPEM)
+	if err != nil {
+		t.Fatalf("parse priv: %v", err)
+	}
+	now := time.Now().UTC()
+
+	claims := jwt.MapClaims{
+		"iss":            "ks-admin",
+		"sub":            "inst_crafted",
+		"aud":            []string{"ks-client"},
+		"iat":            now.Unix(),
+		"exp":            now.Add(time.Hour).Unix(),
+		"instance_id":    "inst_crafted",
+		"e2e_public_key": "crafted-pubkey",
+		"org_name":       "测试",
+		"instance_name":  "篡改",
+		"att_ver":        1,
+	}
+	for k, v := range claimsOverrides {
+		claims[k] = v
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodEdDSA, claims)
+	token.Header["typ"] = "ATT+JWT"
+	token.Header["kid"] = "ks-admin-2026"
+	for k, v := range headerOverrides {
+		token.Header[k] = v
+	}
+
+	signed, err := token.SignedString(priv)
+	if err != nil {
+		t.Fatalf("sign crafted: %v", err)
+	}
+	return signed
+}
+
+func TestVerifyAttestation_TypMismatch(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	token := signCraftedAttestation(t, priv, map[string]any{"typ": "JWT"}, nil)
+
+	if _, err := VerifyAttestation(token, pub, "ks-admin-2026"); err == nil {
+		t.Error("expected error for typ mismatch")
+	}
+}
