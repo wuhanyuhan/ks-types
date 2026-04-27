@@ -1,6 +1,7 @@
 package kstypes
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -8,6 +9,57 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 )
+
+func TestSignAttestation_StructureAndHeaders(t *testing.T) {
+	priv, _ := loadTestKeys(t)
+
+	claims := AttestationClaims{
+		InstanceID:   "inst_signtest",
+		E2EPublicKey: "test-pubkey",
+		OrgName:      "测试公司",
+		InstanceName: "测试实例",
+	}
+
+	token, err := SignAttestation(claims, priv, "ks-admin-2026", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+	if token == "" {
+		t.Fatal("empty token")
+	}
+
+	// JWT 标准三段
+	parts := strings.Split(token, ".")
+	if len(parts) != 3 {
+		t.Fatalf("expected 3 segments, got %d (%s)", len(parts), token)
+	}
+
+	// 解析 header 校验 alg / typ / kid
+	header := decodeJSONSegment(t, parts[0])
+	if header["alg"] != "EdDSA" {
+		t.Errorf("alg: got %v, want EdDSA", header["alg"])
+	}
+	if header["typ"] != "ATT+JWT" {
+		t.Errorf("typ: got %v, want ATT+JWT", header["typ"])
+	}
+	if header["kid"] != "ks-admin-2026" {
+		t.Errorf("kid: got %v, want ks-admin-2026", header["kid"])
+	}
+}
+
+// decodeJSONSegment base64url decode + JSON unmarshal
+func decodeJSONSegment(t *testing.T, segment string) map[string]any {
+	t.Helper()
+	b, err := base64.RawURLEncoding.DecodeString(segment)
+	if err != nil {
+		t.Fatalf("base64 decode: %v", err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatalf("json unmarshal: %v", err)
+	}
+	return m
+}
 
 func TestAttestationClaims_JSONFieldNames(t *testing.T) {
 	claims := AttestationClaims{
