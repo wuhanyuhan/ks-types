@@ -220,3 +220,17 @@ func TestVerifyAttestation_MalformedTokens(t *testing.T) {
 		})
 	}
 }
+
+func TestVerifyAttestation_KidMismatch(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	claims := AttestationClaims{InstanceID: "inst_kid"}
+	token, err := SignAttestation(claims, priv, "ks-admin-2026", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	if _, err := VerifyAttestation(token, pub, "ks-admin-2099"); err == nil {
+		t.Error("expected error for kid mismatch")
+	}
+}
