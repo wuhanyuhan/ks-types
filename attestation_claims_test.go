@@ -1,6 +1,7 @@
 package kstypes
 
 import (
+	"crypto/ed25519"
 	"encoding/base64"
 	"encoding/json"
 	"strings"
@@ -160,5 +161,62 @@ func TestAttestationClaims_JSONFieldNames(t *testing.T) {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q in JSON: %s", want, s)
 		}
+	}
+}
+
+func TestVerifyAttestation_Expired(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	claims := AttestationClaims{InstanceID: "inst_expired"}
+	token, err := SignAttestation(claims, priv, "ks-admin-2026", -1*time.Hour) // 已经过期
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	if _, err := VerifyAttestation(token, pub, "ks-admin-2026"); err == nil {
+		t.Error("expected error for expired token")
+	}
+}
+
+func TestVerifyAttestation_InvalidSignature(t *testing.T) {
+	priv, _ := loadTestKeys(t)
+
+	claims := AttestationClaims{InstanceID: "inst_badsig"}
+	token, err := SignAttestation(claims, priv, "ks-admin-2026", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	otherPub, _, err := ed25519.GenerateKey(nil)
+	if err != nil {
+		t.Fatalf("generate other key: %v", err)
+	}
+	otherPubPEM := marshalPublicKeyPEM(otherPub)
+
+	if _, err := VerifyAttestation(token, otherPubPEM, "ks-admin-2026"); err == nil {
+		t.Error("expected error for invalid signature")
+	}
+}
+
+func TestVerifyAttestation_MalformedTokens(t *testing.T) {
+	_, pub := loadTestKeys(t)
+
+	cases := []struct {
+		name  string
+		token string
+	}{
+		{"空字符串", ""},
+		{"随机垃圾", "not-a-jwt-at-all"},
+		{"只有 header", "eyJhbGciOiJFZERTQSIsInR5cCI6IkFUVCtKV1QifQ"},
+		{"两段（缺 signature）", "eyJhbGciOiJFZERTQSIsInR5cCI6IkFUVCtKV1QifQ.eyJzdWIiOiJ0ZXN0In0"},
+		{"三段但 signature 损坏", "eyJhbGciOiJFZERTQSIsInR5cCI6IkFUVCtKV1QifQ.eyJzdWIiOiJ0ZXN0In0.AAAA_invalid_sig"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if _, err := VerifyAttestation(c.token, pub, "ks-admin-2026"); err == nil {
+				t.Errorf("expected error for malformed token %q", c.name)
+			}
+		})
 	}
 }
