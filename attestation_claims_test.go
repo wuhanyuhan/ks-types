@@ -61,6 +61,70 @@ func decodeJSONSegment(t *testing.T, segment string) map[string]any {
 	return m
 }
 
+func TestVerifyAttestation_RoundTrip(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	claims := AttestationClaims{
+		InstanceID:   "inst_round",
+		E2EPublicKey: "round-pubkey",
+		OrgName:      "宇寒",
+		InstanceName: "总部",
+	}
+	token, err := SignAttestation(claims, priv, "ks-admin-2026", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	got, err := VerifyAttestation(token, pub, "ks-admin-2026")
+	if err != nil {
+		t.Fatalf("verify: %v", err)
+	}
+
+	if got.InstanceID != "inst_round" {
+		t.Errorf("instance_id: got %q", got.InstanceID)
+	}
+	if got.E2EPublicKey != "round-pubkey" {
+		t.Errorf("e2e_public_key: got %q", got.E2EPublicKey)
+	}
+	if got.OrgName != "宇寒" {
+		t.Errorf("org_name: got %q", got.OrgName)
+	}
+	if got.InstanceName != "总部" {
+		t.Errorf("instance_name: got %q", got.InstanceName)
+	}
+	if got.AttVer != 1 {
+		t.Errorf("att_ver: got %d, want 1", got.AttVer)
+	}
+	if got.Issuer != "ks-admin" {
+		t.Errorf("iss: got %q", got.Issuer)
+	}
+	if len(got.Audience) != 1 || got.Audience[0] != "ks-client" {
+		t.Errorf("aud: got %v", got.Audience)
+	}
+	if got.Subject != "inst_round" {
+		t.Errorf("sub: got %q", got.Subject)
+	}
+}
+
+func TestVerifyAttestation_EmptyExpectedKidSkipsKidCheck(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	claims := AttestationClaims{InstanceID: "inst_nokid"}
+	token, err := SignAttestation(claims, priv, "any-kid", 1*time.Hour)
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+
+	// expectedKid 为空字符串时跳过 kid 校验
+	got, err := VerifyAttestation(token, pub, "")
+	if err != nil {
+		t.Fatalf("verify with empty kid: %v", err)
+	}
+	if got.InstanceID != "inst_nokid" {
+		t.Errorf("instance_id: got %q", got.InstanceID)
+	}
+}
+
 func TestAttestationClaims_JSONFieldNames(t *testing.T) {
 	claims := AttestationClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
