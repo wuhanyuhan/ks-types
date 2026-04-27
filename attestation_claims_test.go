@@ -286,3 +286,25 @@ func TestVerifyAttestation_TypMismatch(t *testing.T) {
 		t.Error("expected error for typ mismatch")
 	}
 }
+
+func TestVerifyAttestation_AudMismatch(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	cases := []struct {
+		name string
+		aud  any
+	}{
+		{"aud=ks-relay", []string{"ks-relay"}},
+		{"aud=ks-hub", []string{"ks-hub"}},
+		{"aud 为空数组", []string{}},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			token := signCraftedAttestation(t, priv, nil, map[string]any{"aud": c.aud})
+			if _, err := VerifyAttestation(token, pub, "ks-admin-2026"); err == nil {
+				t.Errorf("expected error for %s", c.name)
+			}
+		})
+	}
+}
