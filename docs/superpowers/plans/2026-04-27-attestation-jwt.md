@@ -126,7 +126,7 @@ func TestAttestationClaims_JSONFieldNames(t *testing.T) {
 		`"att_ver":1`,
 		`"sub":"inst_abc"`,
 		`"iss":"ks-admin"`,
-		`"aud":"ks-client"`, // jwt.ClaimStrings 单元素时序列化为字符串
+		`"aud":["ks-client"]`, // jwt.ClaimStrings 始终序列化为 JSON 数组（jwt/v5 默认 MarshalSingleStringAsArray=true）
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("missing %q in JSON: %s", want, s)
@@ -837,7 +837,7 @@ cd ~/projects/yuhan/ks-types && git add README.md CHANGELOG.md && git commit -m 
 ## 完成判定
 
 - [ ] `attestation_claims.go` 与 `attestation_claims_test.go` 文件存在
-- [ ] `go test ./...` 全部 PASS（包含新增 9 个 test 函数 + 子用例）
+- [ ] `go test ./...` 全部 PASS（包含新增 12 个 test 函数 + 10 个子用例）
 - [ ] `go vet ./...` 无 warning
 - [ ] README "特性" 段落与 CHANGELOG `[Unreleased]` 都已记录新能力
 - [ ] git log 显示 9 次新增 commit（task 1-9 各一次）
