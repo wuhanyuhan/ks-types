@@ -1,5 +1,11 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- `AttestationClaims` struct + `SignAttestation` / `VerifyAttestation`：ks-admin 签发给 ks-client 的实例身份证明 JWT，typ=ATT+JWT，aud=ks-client，强制 kid header。仅用于 ks-client 端验证 LAN 内发现的 keystone 实例是否由 ks-admin 合法签发。
+
 ## [v0.6.0] - 2026-04-19
 
 ### Added

@@ -11,6 +11,7 @@ Keystone（KS）平台的共享 Go 类型库：统一错误码、Ed25519 JWT、M
 - **Manifest 解析**：`AppSpec` 同时带 `yaml` 和 `json` tag，内建 `Validate()`。
 - **权限注册表**：`PermissionRegistry` 支持动态注册维度、未知维度告警、非法 level 报错、高风险权限检测。
 - **Gin 中间件**：`ginmw.InstanceJWTMiddleware` 读取 `Authorization: Bearer`，支持可选的吊销回调。
+- **Attestation JWT (ATT+JWT)**：ks-admin 签发给 ks-client 的实例身份证明，独立于 Instance JWT，专供局域网发现场景做"实例合法性校验"。`SignAttestation` / `VerifyAttestation` 使用与 Instance JWT 同一对 Ed25519 密钥，但 `aud` 锁死为 `"ks-client"`、`typ` 为 `"ATT+JWT"`、强制 `kid` header，与 Instance JWT 不可互换误用。
 
 ## 安装
 
