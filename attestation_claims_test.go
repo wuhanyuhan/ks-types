@@ -308,3 +308,33 @@ func TestVerifyAttestation_AudMismatch(t *testing.T) {
 		})
 	}
 }
+
+func TestVerifyAttestation_AttVerUnsupported(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	cases := []struct {
+		name   string
+		attVer any
+	}{
+		{"att_ver=2 (未来版本)", 2},
+		{"att_ver=0 (零值)", 0},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			token := signCraftedAttestation(t, priv, nil, map[string]any{"att_ver": c.attVer})
+			if _, err := VerifyAttestation(token, pub, "ks-admin-2026"); err == nil {
+				t.Errorf("expected error for %s", c.name)
+			}
+		})
+	}
+}
+
+func TestVerifyAttestation_IssMismatch(t *testing.T) {
+	priv, pub := loadTestKeys(t)
+
+	token := signCraftedAttestation(t, priv, nil, map[string]any{"iss": "imposter"})
+	if _, err := VerifyAttestation(token, pub, "ks-admin-2026"); err == nil {
+		t.Error("expected error for iss mismatch")
+	}
+}
