@@ -6,6 +6,29 @@
 
 - `AttestationClaims` struct + `SignAttestation` / `VerifyAttestation`：ks-admin 签发给 ks-client 的实例身份证明 JWT，typ=ATT+JWT，aud=ks-client，强制 kid header。仅用于 ks-client 端验证 LAN 内发现的 keystone 实例是否由 ks-admin 合法签发。
 
+## [v0.8.0] - 2026-04-30
+
+### Added
+
+- `ginmw.RequireAudience(svc string) Option`：`InstanceJWTMiddleware` 新增 functional option，强制要求 JWT 的 `aud` 包含指定服务名；不传 option 时保持默认放行（向后兼容）。
+- `ginmw.Option` 类型 + 中间件签名扩展：`InstanceJWTMiddleware(publicPEM, isRevoked, opts ...Option)`，旧调用方无需改动。
+
+### Changed
+
+- `SignInstanceJWT` 的 `Audience` 由 `["ks-hub", "ks-admin"]` 扩展为 `["ks-admin", "ks-hub", "ks-relay", "ks-llm-gateway"]`，覆盖生态全部 4 个云服务。
+
+### Rationale
+
+为统一实例鉴权改造（spec `2026-04-30-unified-instance-auth-and-shared-redis-design.md`）的 Phase A 协议层前置。让 keystone 一份 `instance_jwt` 通用于 ks-admin / ks-hub / ks-relay / ks-llm-gateway 四端；中间件 RequireAudience 默认放行，由各服务在 Phase B/C 改造完成后显式启用，避免存量 token 因 aud 列表不匹配被立即拒收。
+
+### Breaking Changes
+
+无。新增字段值（aud 增加 2 个元素）与新 option 均向后兼容：旧调用方 `InstanceJWTMiddleware(pub, isRevoked)` 无需改动；旧 token（aud 仅 2 项）只要不启用 `RequireAudience`，仍可被中间件接受。
+
+### Ecosystem
+
+消费方：`ks-admin` / `ks-llm-gateway` / `keystone` / `ks-hub` 四仓 `go.mod` 同步升级到 `v0.8.0`。
+
 ## [v0.6.0] - 2026-04-19
 
 ### Added
