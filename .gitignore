@@ -48,3 +48,6 @@ go.work.sum
 .gemini/
 .aider*
 .cursor/
+
+# Git worktrees
+.worktree/
