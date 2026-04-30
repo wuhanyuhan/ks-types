@@ -113,9 +113,16 @@ func TestInstanceJWT_Audience(t *testing.T) {
 	if err != nil {
 		t.Fatalf("verify: %v", err)
 	}
-	aud := got.Audience
-	if len(aud) != 2 || aud[0] != "ks-hub" || aud[1] != "ks-admin" {
-		t.Errorf("audience: got %v", aud)
+	// Phase A：audience 扩展为 4 项，覆盖所有云服务
+	want := []string{"ks-admin", "ks-hub", "ks-relay", "ks-llm-gateway"}
+	aud := []string(got.Audience)
+	if len(aud) != len(want) {
+		t.Fatalf("audience len: got %d %v, want %d %v", len(aud), aud, len(want), want)
+	}
+	for i, v := range want {
+		if aud[i] != v {
+			t.Errorf("audience[%d]: got %q, want %q", i, aud[i], v)
+		}
 	}
 }
 

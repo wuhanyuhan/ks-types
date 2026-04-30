@@ -27,7 +27,7 @@ func SignInstanceJWT(claims InstanceClaims, privatePEM []byte, ttl time.Duration
 	claims.RegisteredClaims = jwt.RegisteredClaims{
 		Subject:   claims.InstanceID,
 		Issuer:    "ks-admin",
-		Audience:  jwt.ClaimStrings{"ks-hub", "ks-admin"},
+		Audience:  jwt.ClaimStrings{"ks-admin", "ks-hub", "ks-relay", "ks-llm-gateway"},
 		IssuedAt:  jwt.NewNumericDate(now),
 		ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
 	}
