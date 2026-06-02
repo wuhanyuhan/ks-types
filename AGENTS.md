@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-`ks-types` 是 **Keystone（KS）平台** 的共享类型库（Go module: `github.com/wuhanyuhan/ks-types`），在 `ks-hub`、`ks-admin` 等服务之间复用以下内容：
+`ks-types` 是 **Keystone（KS）平台** 的共享类型库（Go module: `github.com/wuhanyuhan/ks-types`），在平台的各云服务之间复用以下内容：
 
 - 应用类型与定价枚举（`AppType`、`PricingType`）
 - 统一业务错误码（`BizError`）

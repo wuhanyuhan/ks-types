@@ -120,11 +120,11 @@ type AppSpec struct {
 	// Changelog 当前版本的 changelog markdown，由 publish 流程从 CHANGELOG.md 抽取
 	// 或开发者直接在 manifest 内填写。Store 详情页直接渲染。
 	Changelog string `yaml:"changelog,omitempty" json:"changelog,omitempty"`
-	// Author 应用作者标识（人或组织名）。Publisher 是发布主体（必为 ks-hub
-	// publisher），Author 可独立标注开发者署名。
+	// Author 应用作者标识（人或组织名）。Publisher 是发布主体（由平台分配），
+	// Author 可独立标注开发者署名。
 	Author string `yaml:"author,omitempty" json:"author,omitempty"`
 	// Icon 图标资源相对路径（相对 manifest.yaml 所在目录），如 "icon.svg"。
-	// publish 时随 tarball 上传，ks-hub 在平台侧登记图标资源，store 详情页据此
+	// publish 时随 tarball 上传，平台登记图标资源，store 详情页据此
 	// 渲染图标 URL。yaml/json tag 与历史 manifest.yaml 字段名兼容。
 	Icon string `yaml:"icon,omitempty" json:"icon,omitempty"`
 	// TaskTemplates 开箱即用任务模板清单。agent 类应用安装后，keystone 按此清单在平台侧

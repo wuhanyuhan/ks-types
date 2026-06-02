@@ -10,7 +10,7 @@ const (
 	// （合并了旧 service + extension：两者安装路径相同，区分是伪命题。）
 	AppTypeApp AppType = "app"
 	// AppTypeSquad 一个 agent 团队（lead + 专家，外部进程/容器），keystone 视作
-	// 单一"团队前门"黑盒；团队内部由 ks-squad-framework 自治，不泄漏给平台。
+	// 单一"团队前门"黑盒；团队内部由 squad 运行时框架自治，不泄漏给平台。
 	// 何时选：有 LLM 负责人编排多个专家技能——以一个前门能力对外供给。
 	AppTypeSquad AppType = "squad"
 	// AppTypeAgent 单体 LLM 智能体（运行在 keystone 内，runtime.mode=none、无独立进程），

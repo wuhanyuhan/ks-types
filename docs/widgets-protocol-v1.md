@@ -67,7 +67,7 @@ squad 在 `/meta` 端点声明 capability + tool widget binding，keystone 在 m
 
 ```json
 {
-  "name": "ks-mcp-squad-marketing",
+  "name": "squad-marketing",
   "version": "0.6.0",
   "capabilities": {"ui": {"enabled": true, "requested_sandbox": ["allow-downloads"]}},
   "tools": [
@@ -458,7 +458,7 @@ keystone proxy `NormalizeToolResult` 把上面的 raw `_meta` 转成统一的 `U
 
 widgets-protocol-v1 是**首发协议层**，不存在更老的兼容对端：
 
-- 不声明 `capabilities.ui` 的 squad（如所有 ks-mcp-* 现状）→ keystone 完全跳过 normalize（fast path），与升级前行为完全一致
+- 不声明 `capabilities.ui` 的 squad（如目前所有 squad）→ keystone 完全跳过 normalize（fast path），与升级前行为完全一致
 - `capabilities.ui.enabled = false` → 同上
 - 部分启用：`capabilities.ui.enabled = true`，部分 tool 不带 `_meta.ui` → 这些 tool fast path
 

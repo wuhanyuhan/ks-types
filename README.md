@@ -2,7 +2,7 @@
 
 Keystone（KS）平台的共享 Go 类型库：统一错误码、Ed25519 JWT、Manifest 解析、权限注册表，以及开箱即用的 Gin 中间件。
 
-被 `ks-hub` / `ks-admin` 等服务引用，保证跨服务的类型与契约一致。
+被 Keystone 平台的各云服务引用，保证跨服务的类型与契约一致。
 
 ## 特性
 
@@ -11,7 +11,7 @@ Keystone（KS）平台的共享 Go 类型库：统一错误码、Ed25519 JWT、M
 - **Manifest 解析**：`AppSpec` 同时带 `yaml` 和 `json` tag，内建 `Validate()`。
 - **权限注册表**：`PermissionRegistry` 支持动态注册维度、未知维度告警、非法 level 报错、高风险权限检测。
 - **Gin 中间件**：`ginmw.InstanceJWTMiddleware` 读取 `Authorization: Bearer`，支持可选的吊销回调。
-- **Attestation JWT (ATT+JWT)**：ks-admin 签发给 ks-client 的实例身份证明，独立于 Instance JWT，专供局域网发现场景做"实例合法性校验"。`SignAttestation` / `VerifyAttestation` 使用与 Instance JWT 同一对 Ed25519 密钥，但 `aud` 锁死为 `"ks-client"`、`typ` 为 `"ATT+JWT"`、强制 `kid` header，与 Instance JWT 不可互换误用。
+- **Attestation JWT (ATT+JWT)**：平台签发给客户端的实例身份证明，独立于 Instance JWT，专供局域网发现场景做"实例合法性校验"。`SignAttestation` / `VerifyAttestation` 使用与 Instance JWT 同一对 Ed25519 密钥，但 `aud` 锁死为 `"ks-client"`、`typ` 为 `"ATT+JWT"`、强制 `kid` header，与 Instance JWT 不可互换误用。
 
 ## 安装
 
@@ -160,7 +160,7 @@ auth:
 - **ks-devkit SDK (ksapp)**: `ksapp.WithKeystoneAuth()` 按 manifest 的 `auth.mode`
   挂载 JWKSVerifier；strict-by-default（`auth.mode=keystone_jwks` 且
   `KEYSTONE_JWKS_URL` 为空时启动 panic）
-- **ks-squad-framework**: bootstrap 默认启用同等行为
+- **squad 运行时框架**: bootstrap 默认启用同等行为
 - **keystone**: MCP proxy 按平台侧记录的 `auth.mode` 决定是否为调用
   动态签发 JWT 并注入 Authorization header
 

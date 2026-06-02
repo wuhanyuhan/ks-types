@@ -19,7 +19,7 @@ type InstanceClaims struct {
 
 // SignInstanceJWT 用 Ed25519 私钥签发实例 JWT。
 //
-// kid 写入 token header 用于下游 JWKS 验签（如 ks-relay）按 kid 选公钥；
+// kid 写入 token header 用于下游 JWKS 验签时按 kid 选公钥；
 // kid 由调用方派生（如对公钥做 SHA256 截断取前若干字节），避免在本库重复实现导致两边漂移。
 // 传 "" 表示不写 kid header（仅测试与不走 JWKS 的链路使用，生产调用方应始终传非空 kid）。
 func SignInstanceJWT(claims InstanceClaims, privatePEM []byte, ttl time.Duration, kid string) (string, error) {

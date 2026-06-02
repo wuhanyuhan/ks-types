@@ -45,8 +45,8 @@ type ConfigPubkeyTrust struct {
 	RequiresUserConfirmation bool   `json:"requires_user_confirmation"`
 }
 
-// AppPackageSignature 是 ks-hub registry / download 元数据中携带的应用包系统签名。
-// 签名根固定为 ks-admin JWKS；signature_b64 验证的 payload 由 SignedPayloadB64
+// AppPackageSignature 是平台 registry / download 元数据中携带的应用包系统签名。
+// 签名根固定为平台 JWKS；signature_b64 验证的 payload 由 SignedPayloadB64
 // 承载，调用方必须按 Domain 走对应 domain separation verify。
 type AppPackageSignature struct {
 	SignatureB64      string `json:"signature_b64"`

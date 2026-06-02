@@ -7,7 +7,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// AttestationClaims 是 ks-admin 签发给 ks-client 的实例身份证明 JWT 的 Claims
+// AttestationClaims 是平台签发给客户端的实例身份证明 JWT 的 Claims
 //
 // JSON 字段名与 spec 一致；att_ver 当前固定为 1
 type AttestationClaims struct {
@@ -21,7 +21,7 @@ type AttestationClaims struct {
 
 // SignAttestation 用 Ed25519 私钥签发 Attestation JWT
 //
-// kid 是签发方密钥 ID（写入 JWT header.kid），ks-client 端比对内置常量用；不能为空
+// kid 是签发方密钥 ID（写入 JWT header.kid），客户端比对内置常量用；不能为空
 // ttl 决定 ExpiresAt（当前时间 + ttl）
 //
 // 函数会强制覆写 RegisteredClaims 的 Issuer/Audience/Subject/IssuedAt/ExpiresAt
