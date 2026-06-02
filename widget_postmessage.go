@@ -1,0 +1,32 @@
+package kstypes
+
+// postMessage 协议方法名（host ↔ iframe）。
+// 仅自定义 widget（ui:// scheme）路径用；共享 widget 走同源 React，不走 postmessage。
+//
+// 协议层只定义方法名（wire format string），具体 payload 由前端 SDK 与 squad SDK 自行规范。
+const (
+	PMMethodAppReady              = "app.ready"
+	PMMethodAppData               = "app.data"
+	PMMethodAppResize             = "app.resize"
+	PMMethodAppCallServerTool     = "app.callServerTool"
+	PMMethodAppToolResult         = "app.toolResult"
+	PMMethodAppToolError          = "app.toolError"
+	PMMethodAppUpdateModelContext = "app.updateModelContext"
+	PMMethodAppClose              = "app.close"
+	PMMethodAppNotify             = "app.notify"
+	PMMethodAppOpenLink           = "app.openLink"
+)
+
+// iframe sandbox flag 常量（自定义 widget 容器用）。
+//
+// 默认基础集（不可变）：allow-scripts allow-forms
+// 故意去掉：allow-same-origin / allow-top-navigation / allow-modals / allow-popups
+//
+// squad 在 ToolUIBinding.SandboxHints 申请追加 flag 时，必须落在本白名单内；
+// 平台侧 mount 阶段会校验。
+const (
+	SandboxFlagAllowDownloads  = "allow-downloads"   // keystone 默认在白名单
+	SandboxFlagAllowPopups     = "allow-popups"      // 默认不在
+	SandboxFlagAllowModals     = "allow-modals"      // 默认不在
+	SandboxFlagAllowSameOrigin = "allow-same-origin" // 默认严禁，特殊审批
+)

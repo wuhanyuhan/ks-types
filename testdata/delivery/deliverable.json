@@ -1,0 +1,26 @@
+{
+  "id": "del_1",
+  "run_id": "run_1",
+  "canonical_name": "squad-marketing.run_content_piece",
+  "type": "article",
+  "title": "新品发布推文",
+  "summary": "已生成一版可发布的中文推文。",
+  "preview": {
+    "kind": "markdown",
+    "content": "## 推文\n今天发布新品。"
+  },
+  "artifacts": [
+    {
+      "kind": "file",
+      "ref": "file_1",
+      "title": "推文正文.md"
+    }
+  ],
+  "state": "finalized",
+  "version": 1,
+  "metadata": {
+    "created_at": 1710000000000,
+    "completed_at": 1710000005000,
+    "source_kind": "mcp_tool"
+  }
+}

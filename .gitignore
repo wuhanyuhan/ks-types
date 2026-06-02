@@ -1,0 +1,53 @@
+# 测试覆盖率产物
+coverage.out
+coverage.html
+*.cover
+*.test
+*.out
+
+# 性能分析产物
+*.prof
+*.pprof
+cpu.out
+mem.out
+
+# 编译产物（虽然本项目是 library，但预留）
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+# 注意：dist/ 是 tygo 派生 TS 类型产物（widgets-protocol-v1），需入库给前端消费方
+
+# Go 依赖与工作区
+vendor/
+go.work
+go.work.sum
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# 本地环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志
+*.log
+
+# AI 助手本地工作目录
+.claude/
+.gemini/
+.aider*
+.cursor/
+
+# Git worktrees
+worktrees/

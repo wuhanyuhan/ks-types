@@ -1,0 +1,77 @@
+id: my-translator
+name: 智能翻译助手
+version: 1.2.0
+type: app
+summary: 支持 100+ 语言的实时翻译
+description: 详细介绍...
+publisher: "@my-team"
+category: productivity
+tags: [translation, nlp]
+compatibility:
+  keystone: ">=1.5.0"
+auth:
+  mode: keystone_jwks
+pricing:
+  type: free
+runtime:
+  mode: container
+  image: my-team/translator:1.2.0
+  volumes:
+    - /data/models:/models
+  health_check: /healthz
+  health_check_url: http://localhost:8080/mcp
+  resources:
+    cpu: "0.5"
+    memory: 512Mi
+store:
+  presentation: service_app
+  audience:
+    - 内容团队
+  highlights:
+    - 提供文章生成和封面配图能力
+  try_prompts:
+    - 帮我写一篇关于 AI Agent 的文章
+  badges:
+    - 长任务
+provides:
+  capabilities:
+    - name: translate
+      display_name: 实时翻译
+      execution_mode: sync
+      backend:
+        kind: mcp_tool
+        tool_name: translate
+      timeout_ms: 30000
+      side_effect_level: none
+      notify_policy:
+        on_failed: true
+      description: 接收 text + target_lang，调用 LLM 完成翻译并返回译文
+      aliases: [翻译, translate]
+      user_utterances:
+        - 把这段翻译成英文
+        - translate this to Spanish
+      use_cases: [跨语言沟通, 文档翻译]
+      domain_terms: [source_lang, target_lang, text]
+requires:
+  capabilities:
+    - canonical_name: ks-mcp-lili.search
+      mode: required
+      reason: 翻译时查询词典
+    - canonical_name: ks-mcp-writer.polish
+      mode: recommended
+      reason: 提升翻译润色质量
+conflicts:
+  apps:
+    - id: old-translator
+      reason: 端口冲突
+permissions:
+  network:
+    level: restricted
+    allowed_domains:
+      - api.deepl.com
+  llm:
+    level: host_proxy
+  filesystem:
+    level: none
+  user_context:
+    level: read

@@ -1,0 +1,15 @@
+packages:
+  - path: "github.com/wuhanyuhan/ks-types"
+    output_path: "dist/widgets.d.ts"
+    type_mappings:
+      "encoding/json.RawMessage": "unknown"
+      "reflect.Type": "unknown"
+    include_files:
+      - "widgets.go"
+      - "widget_uri.go"
+      - "widgets_data.go"
+      - "widget_postmessage.go"
+      - "deliverable.go"
+      - "expert_activity.go"
+      - "decision_gate.go"
+    fallback_type: "unknown"

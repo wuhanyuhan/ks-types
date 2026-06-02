@@ -1,0 +1,27 @@
+id: skill-tdd-i18n
+name: skill-tdd-i18n
+version: 0.1.0
+type: skill
+runtime:
+  mode: none
+summary:
+  zh-CN: 中文摘要
+  en-US: English summary
+description:
+  zh-CN: |
+    ## 功能
+    中文版
+  en-US: |
+    ## Features
+    English version
+tags:
+  zh-CN: [测试, 调试]
+  en-US: [test, debug]
+pricing:
+  type: paid
+  description:
+    zh-CN: 按月订阅 ¥99
+    en-US: Monthly subscription $14.99
+changelog: |
+  ### Added
+  - Initial i18n support

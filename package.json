@@ -1,0 +1,29 @@
+{
+  "name": "@wuhanyuhan/ks-types",
+  "version": "1.0.0",
+  "description": "ks-types 协议层 TypeScript 类型分发（tygo 派生 widgets-protocol-v1）",
+  "license": "MIT",
+  "private": false,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wuhanyuhan/ks-types.git"
+  },
+  "homepage": "https://github.com/wuhanyuhan/ks-types#readme",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "testdata/delivery",
+    "README.md",
+    "LICENSE"
+  ]
+}
