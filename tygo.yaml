@@ -9,7 +9,4 @@ packages:
       - "widget_uri.go"
       - "widgets_data.go"
       - "widget_postmessage.go"
-      - "deliverable.go"
-      - "expert_activity.go"
-      - "decision_gate.go"
     fallback_type: "unknown"
