@@ -16,28 +16,61 @@
 - 运行时模式（`RuntimeMode`）与保护级别（`ProtectionLevel`）
 - 权限维度注册表（`PermissionRegistry`）与高风险权限检测
 - Gin 中间件 `ginmw.InstanceJWTMiddleware`（含吊销检查钩子）
+- **Attestation JWT**（`AttestationClaims`）签发/校验（`ATT+JWT`，局域网发现场景）
+- **Widgets 协议**（widgets-protocol-v1）：MCP tool widget 渲染契约 + 5 个 MVP widget 数据 schema、`ks://`/`ui://` URI 解析、postMessage 常量（tygo 派生 TS）
 
 本项目是纯 **library**，不包含可执行程序，也不持有任何数据库或外部依赖。
 
 ## 目录结构
 
-```
-.
-├── apptypes.go            # AppType / PricingType 枚举
-├── errors.go              # BizError 与预定义错误码
-├── jwt.go                 # Ed25519 PEM 加载/解析
-├── instance_claims.go     # 实例 JWT 签发/校验
-├── developer_claims.go    # 开发者 JWT 签发/校验
-├── manifest.go            # AppSpec + YAML 解析 + Validate
-├── install.go             # InstallSpec 安装规格
-├── result.go              # Result / PageResult / ListResult 通用响应
-├── permissions.go         # PermissionRegistry + DefaultPermissionRegistry
-├── ginmw/
-│   └── instance_jwt.go    # Gin 中间件：InstanceJWTMiddleware
-├── testdata/             # manifest 样例（valid / invalid / i18n）与 delivery/ 交付物 JSON 等测试 fixture
-├── go.mod                 # module github.com/wuhanyuhan/ks-types
-└── *_test.go              # 每个源文件对应一个测试文件
-```
+按公开面分组（每个源文件均配同名 `_test.go`）：
+
+**认证 / JWT**
+
+- `jwt.go` — Ed25519 PEM 加载/解析
+- `instance_claims.go` — 实例 JWT 签发/校验
+- `developer_claims.go` — 开发者 JWT 签发/校验
+- `attestation_claims.go` — Attestation JWT（`ATT+JWT`）签发/校验
+- `ginmw/instance_jwt.go` — Gin 中间件 `InstanceJWTMiddleware`
+
+**应用 Manifest 与契约**
+
+- `manifest.go` — `AppSpec` + YAML 解析 + `Validate`
+- `apptypes.go` — `AppType` / `PricingType` 枚举
+- `install.go` — `InstallSpec` 安装规格
+- `permissions.go` — `PermissionRegistry` + `DefaultPermissionRegistry`
+- `config_schema.go` — config schema + `AppPackageSignature` 应用包签名
+- `standalone_fallback.go` — standalone 模式本地资源 fallback
+- `task_template.go` — manifest `task_templates` 段任务模板
+- `localized.go` — `LocalizedString` i18n 字段类型
+- `meta.go` — `/meta` 服务能力发现端点类型
+- `attachment.go` — MCP 工具结果附件签名约定
+- `llm_intent.go` — LLM 意图词表
+- `compliance.go` — 决策模式语义枚举
+
+**错误与响应**
+
+- `errors.go` — `BizError` 与分段错误码
+- `result.go` — `Result` / `PageResult` / `ListResult` 通用响应
+
+**Widgets 协议（widgets-protocol-v1，tygo 派生 TS）**
+
+- `widgets.go` — widget binding 类型 + `UIResource`
+- `widgets_data.go` — 5 个 MVP widget 数据 schema
+- `widgets_registry.go` — 共享 widget schema 注册表
+- `widget_uri.go` — WidgetURI 解析（`ks://` / `ui://`）
+- `widget_postmessage.go` — postMessage 方法名 + sandbox flag 常量
+
+**内部协议类型（keystone↔squad 运行时编排，非对外开发者契约）**
+
+- `a2a_task.go` / `a2a_skill.go` / `a2a_security.go` / `agent_card.go` — A2A 协议类型
+- `decision_gate.go` / `deliverable.go` / `expert_activity.go` — squad 过程编排与交付物类型
+
+**其它**
+
+- `go.mod` — module `github.com/wuhanyuhan/ks-types`
+- `testdata/` — manifest 样例（valid / invalid / i18n）与 `delivery/` 交付物 JSON
+- `*_test.go` — 每个源文件对应一个测试文件
 
 根包的 Go package name 为 `kstypes`；`ginmw/` 子包的 package name 为 `ginmw`。
 

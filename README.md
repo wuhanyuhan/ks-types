@@ -12,6 +12,7 @@ Keystone（KS）平台的共享 Go 类型库：统一错误码、Ed25519 JWT、M
 - **权限注册表**：`PermissionRegistry` 支持动态注册维度、未知维度告警、非法 level 报错、高风险权限检测。
 - **Gin 中间件**：`ginmw.InstanceJWTMiddleware` 读取 `Authorization: Bearer`，支持可选的吊销回调。
 - **Attestation JWT (ATT+JWT)**：平台签发给客户端的实例身份证明，独立于 Instance JWT，专供局域网发现场景做"实例合法性校验"。`SignAttestation` / `VerifyAttestation` 使用与 Instance JWT 同一对 Ed25519 密钥，但 `aud` 锁死为 `"ks-client"`、`typ` 为 `"ATT+JWT"`、强制 `kid` header，与 Instance JWT 不可互换误用。
+- **Widgets 协议（widgets-protocol-v1）**：MCP tool 结果的 widget 渲染契约——绑定类型 + 5 个 MVP widget 数据 schema + `ks://` / `ui://` URI 解析 + postMessage 常量；经 tygo 派生 TypeScript 类型供前端消费（详见 [`docs/widgets-protocol-v1.md`](docs/widgets-protocol-v1.md)）。
 
 ## 安装
 
@@ -168,20 +169,52 @@ auth:
 
 ## 目录结构
 
-```
-.
-├── apptypes.go            # AppType / PricingType 枚举
-├── errors.go              # BizError 与错误码
-├── jwt.go                 # Ed25519 PEM 加载/解析
-├── instance_claims.go     # 实例 JWT
-├── developer_claims.go    # 开发者 JWT
-├── manifest.go            # Manifest 结构体与校验
-├── install.go             # InstallSpec 安装规格
-├── result.go              # Result / PageResult / ListResult 通用响应
-├── permissions.go         # 权限注册表
-├── ginmw/                 # Gin 中间件
-└── testdata/              # 测试用 PEM 与 manifest 样例
-```
+按公开面分组（每个源文件均配同名 `_test.go`）：
+
+**认证 / JWT**
+
+- `jwt.go` — Ed25519 PEM 加载/解析
+- `instance_claims.go` — 实例 JWT（`InstanceClaims`）
+- `developer_claims.go` — 开发者 JWT（`DeveloperClaims`）
+- `attestation_claims.go` — Attestation JWT（`ATT+JWT`，局域网发现场景）
+- `ginmw/` — Gin 中间件（`InstanceJWTMiddleware`）
+
+**应用 Manifest 与契约**
+
+- `manifest.go` — `AppSpec` 顶层结构 + `Validate`
+- `apptypes.go` — `AppType` / `PricingType` 枚举
+- `install.go` — `InstallSpec` 安装规格 + 配置项类型
+- `permissions.go` — `PermissionRegistry` 权限注册表
+- `config_schema.go` — config schema 与 `AppPackageSignature` 应用包签名
+- `standalone_fallback.go` — standalone（非托管）模式本地资源 fallback
+- `task_template.go` — manifest `task_templates` 段任务模板
+- `localized.go` — `LocalizedString` i18n 字段类型
+- `meta.go` — `/meta` 服务能力发现端点类型
+- `attachment.go` — MCP 工具结果附件签名约定
+- `llm_intent.go` — LLM 意图词表（tier / capability / reasoning）
+- `compliance.go` — 决策模式语义枚举
+
+**错误与响应**
+
+- `errors.go` — `BizError` 与分段错误码
+- `result.go` — `Result` / `PageResult` / `ListResult` 通用响应
+
+**Widgets 协议（widgets-protocol-v1，tygo 派生 TS）**
+
+- `widgets.go` — widget binding 类型 + `UIResource`
+- `widgets_data.go` — 5 个 MVP widget 数据 schema
+- `widgets_registry.go` — 共享 widget schema 注册表
+- `widget_uri.go` — WidgetURI 解析（`ks://` / `ui://`）
+- `widget_postmessage.go` — postMessage 方法名 + sandbox flag 常量
+
+**内部协议类型（keystone↔squad 运行时编排，非对外开发者契约）**
+
+- `a2a_task.go` / `a2a_skill.go` / `a2a_security.go` / `agent_card.go` — A2A 协议类型
+- `decision_gate.go` / `deliverable.go` / `expert_activity.go` — squad 过程编排与交付物类型
+
+**测试 fixture**
+
+- `testdata/` — manifest 样例（valid / invalid / i18n）、`delivery/` 交付物 JSON
 
 ## 开发
 
