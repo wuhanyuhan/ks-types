@@ -2,6 +2,19 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## [v0.33.0] - 2026-06-03
+
+### Removed (breaking)
+
+- **删除全量 a2a 协议类型**：`a2a_task.go`、`a2a_skill.go`、`a2a_security.go`、`agent_card.go` 及其测试。a2a 协议栈已全栈退役，keystone 已删除完整 a2a 实现（后端/5 张表/2 个权限码/前端/capability 枚举 8→7/迁移 0164），全 yuhan 树无任何 a2a 符号残留引用。
+- **删除 `manifest.go` 中 a2a 声明层**：`A2AConfig`、`A2ASkillDef` 类型及 `A2ASkillDef.Validate()` 方法。`AppSpec` 已无 a2a 字段（v0.31.0 起已移除 `AppSpec.A2A`），此次清除最后的 Deprecated 残留类型。
+
+## [v0.32.0] - 2026-06-03
+
+### Removed (breaking)
+
+- **内部编排类型迁出公开仓**：`DecisionGate`、`Deliverable`、`ExpertActivity` 及相关类型迁入私有 `ks-internal-contracts` v0.2.0，不再暴露于公开 `ks-types`。
+
 ## [v0.31.0] - 2026-06-02
 
 ### Changed (breaking)

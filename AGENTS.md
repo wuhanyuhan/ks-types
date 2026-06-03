@@ -61,11 +61,6 @@
 - `widget_uri.go` — WidgetURI 解析（`ks://` / `ui://`）
 - `widget_postmessage.go` — postMessage 方法名 + sandbox flag 常量
 
-**内部协议类型（keystone↔squad 运行时编排，非对外开发者契约）**
-
-- `a2a_task.go` / `a2a_skill.go` / `a2a_security.go` / `agent_card.go` — A2A 协议类型
-- `decision_gate.go` / `deliverable.go` / `expert_activity.go` — squad 过程编排与交付物类型
-
 **其它**
 
 - `go.mod` — module `github.com/wuhanyuhan/ks-types`
