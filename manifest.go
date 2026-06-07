@@ -455,6 +455,10 @@ type CapabilitySpec struct {
 	// CanonicalName 全局唯一能力名。app_provided 由注册期从 Name 派生（作者不写）；
 	// 内置 YAML 维持现状（写全名，如 query.list_my_workflows）。
 	CanonicalName string `yaml:"canonical_name,omitempty" json:"canonical_name,omitempty"`
+	// Entry 标记该能力是否为 squad 专家团对编排官的「入口动作」。
+	// 仅 type=squad 应用有意义：keystone 安装时据此派生团队锚点并标记成员；
+	// 普通 app/agent/skill 留默认 false，行为不变。
+	Entry bool `yaml:"entry,omitempty" json:"entry,omitempty"`
 	// DisplayName UI 展示名（多语言通过 LocalizedString 升级留后续）。
 	DisplayName string `yaml:"display_name,omitempty" json:"display_name,omitempty"`
 	// ExecutionMode 执行模式枚举：sync | long_running | hybrid。

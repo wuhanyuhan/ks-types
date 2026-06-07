@@ -1427,3 +1427,14 @@ func TestManagedMySQL_SlimValidate(t *testing.T) {
 	bad := ManagedMySQLResourceSpec{} // 缺 inject
 	assert.Error(t, bad.Validate())
 }
+
+func TestCapabilitySpec_EntryField(t *testing.T) {
+	y := []byte("name: create_campaign\nexecution_mode: long_running\nentry: true\nbackend:\n  kind: mcp_tool\n  tool_name: create_campaign\n")
+	var c CapabilitySpec
+	if err := yaml.Unmarshal(y, &c); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !c.Entry {
+		t.Fatalf("expected Entry=true, got false")
+	}
+}
