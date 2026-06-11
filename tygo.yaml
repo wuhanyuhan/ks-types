@@ -9,4 +9,6 @@ packages:
       - "widget_uri.go"
       - "widgets_data.go"
       - "widget_postmessage.go"
+      - "sdui_node.go"
+      - "sdui_primitives.go"
     fallback_type: "unknown"

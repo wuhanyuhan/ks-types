@@ -2,6 +2,16 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## [v0.36.0] - 2026-06-11
+
+### Added (widgets-protocol v2 / SDUI 地基)
+
+- **`UINode` 递归节点协议**（`sdui_node.go`）+ `MaxNestingDepth` 嵌套深度上限常量。`UINode{Type,Props,Children,Key}` 是 Server-Driven UI 的递归节点，前端经 tygo 派生（`dist/widgets.d.ts` 含 `UINode`/`SDUI*Props`）。
+- **首批 SDUI 原语 props schema**（`sdui_primitives.go`）：容器 `stack/grid/card/section/tabs/split`、展示 `text/markdown/field-group/table/status-badge/metric/empty-state`、交互 `button/form/link`、复合（遗留 widget 降级）`list-actions/diff-review/timeline/card-grid/image-variants`。每个带值方法 `Validate()`。`SDUIActionIntent` 为 typed 交互意图。
+- **原语注册表**（`sdui_registry.go`，不进 tygo）：`SDUIPrimitiveSchemas`（type→props reflect.Type）+ `ContainerPrimitives`（容器标记），供 keystone 后端递归校验器消费。
+- **Go typed builder 子包** `github.com/wuhanyuhan/ks-types/sdui`：squad 端编译期类型安全构造 UINode 树，不手搓 JSON。
+- 前端独立 tag 同步发布 `widgets-protocol-v2.0.0`（与 Go 模块 tag `v0.36.0` 同一 commit）。
+
 ## [v0.33.0] - 2026-06-03
 
 ### Removed (breaking)
