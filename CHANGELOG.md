@@ -2,6 +2,15 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## [v0.38.0] - 2026-06-11（无前端 tag：纯后端注册表，TS 无变更）
+
+### Added (SDUI 作战室原语注册)
+
+- **`war-room` 原语注册进 `SDUIPrimitiveSchemas`**（`sdui_registry.go`）：新增 `PrimitiveWarRoom` 常量 + 空 props schema `SDUIWarRoomProps`。补齐 v0.37.0 引入 `UIDataSource` 时的缺口——squad 返回 `ks://widgets/sdui@v2` 作战室节点（`{type:"war-room", data:{kind:"team_progress_stream"}}`）时，keystone `ValidateSDUITree` 需在注册表里找到 `war-room` 才不会以 "unknown primitive type" 拒绝。
+- war-room 是叶子原语（data 驱动、无 props、无 children）；协作子视图（connection-status / expert-roster / decision-gate / deliverable-panel 等）是前端从实时流组装的内部渲染，不作为独立 wire 原语下发，故后端只注册 war-room 本身。
+
+纯后端事实源（`sdui_registry.go` 不进 tygo include）：`make types-gen` 输出无 `dist/` 漂移，前端类型契约不变，**无需 bump `widgets-protocol` tag**。加法式、无破坏性。
+
 ## [v0.37.0] - 2026-06-11（前端 tag：widgets-protocol-v2.1.0）
 
 ### Added (SDUI 实时数据源)
