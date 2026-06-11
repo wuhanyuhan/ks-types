@@ -13,13 +13,30 @@ export const MaxNestingDepth = 32;
  * 	Props    该原语的 typed props（按 Type 对应的 SDUI<Name>Props 校验）
  * 	Children 容器原语的子节点（复合/叶子原语为空）
  * 	Key      React key / 稳定标识（可选）
+ * 	Data     typed 实时数据源引用（可选）：节点声明它订阅哪个 typed 流，
+ * 	         前端据 Kind 经协作接线解析为实际 URL / 订阅（非自由表达式绑定）
  */
 export interface UINode {
   type: string;
   props?: unknown /* json.RawMessage */;
   children?: UINode[];
   key?: string;
+  data?: UIDataSource;
 }
+/**
+ * UIDataSource 是 typed 实时数据源引用（非自由表达式绑定）：节点声明「订阅哪个
+ * 封闭枚举的数据源 + 参数」，前端按 Kind 经协作接线（SDUIRenderContext.collab）
+ * 解析为可达 URL / 订阅。禁止把任意 query/表达式塞进来——Kind 是封闭枚举。
+ */
+export interface UIDataSource {
+  kind: string; // 封闭枚举（如 DataSourceTeamProgressStream）
+  params?: { [key: string]: string}; // 该 Kind 的具名参数（如 {"run_id": "..."}）
+}
+/**
+ * DataSourceTeamProgressStream 是首个数据源 Kind：订阅某个 run 的「团队实时进度流」
+ * （Params={run_id}）。前端经反代直连 squad 的 /stream SSE，reduceFrame 聚合成 TeamState。
+ */
+export const DataSourceTeamProgressStream = "team_progress_stream";
 
 //////////
 // source: sdui_primitives.go

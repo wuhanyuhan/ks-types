@@ -2,6 +2,16 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## [v0.37.0] - 2026-06-11（前端 tag：widgets-protocol-v2.1.0）
+
+### Added (SDUI 实时数据源)
+
+- **`UIDataSource` typed 实时数据源** + `UINode.Data *UIDataSource` 可选字段（`sdui_node.go`）：节点声明「订阅哪个**封闭枚举**数据源 + 具名参数」，前端按 `Kind` 经协作接线（`SDUIRenderContext.collab`）解析为可达 URL / 订阅——非自由表达式绑定。
+- **`DataSourceTeamProgressStream` 常量**（首个 Kind）：订阅某个 run 的「团队实时进度流」（`Params={run_id}`），前端经反代直连 squad `/stream` SSE、`reduceFrame` 聚合成 TeamState。供 SDUI 作战室 `war-room` 原语消费。
+- tygo 派生：`dist/widgets.d.ts` 同步出 `UIDataSource` / `data?` / `DataSourceTeamProgressStream`（前端 `@wuhanyuhan/ks-types` 经 `widgets-protocol-v2.1.0` tag 消费）。
+
+加法式：`data` 字段 `omitempty`，既有 UINode wire 格式不变。
+
 ## [v0.36.0] - 2026-06-11
 
 ### Added (widgets-protocol v2 / SDUI 地基)
