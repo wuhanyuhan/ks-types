@@ -92,3 +92,33 @@ func Form(p kstypes.SDUIFormProps) kstypes.UINode {
 func Link(p kstypes.SDUILinkProps) kstypes.UINode {
 	return kstypes.UINode{Type: kstypes.PrimitiveLink, Props: mustProps(p)}
 }
+
+// --- 视图（P3 统一作战台）---
+
+func Chart(p kstypes.SDUIChartProps) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveChart, Props: mustProps(p)}
+}
+
+func ReportViewer(p kstypes.SDUIReportViewerProps, children ...kstypes.UINode) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveReportViewer, Props: mustProps(p), Children: children}
+}
+
+func ConsoleShell(p kstypes.SDUIConsoleShellProps, children ...kstypes.UINode) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveConsoleShell, Props: mustProps(p), Children: children}
+}
+
+func Slot(p kstypes.SDUISlotProps) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveSlot, Props: mustProps(p)}
+}
+
+// WarRoomLive：作战室实时节点（data.kind=team_progress_stream）。
+func WarRoomLive(runID string) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveWarRoom, Data: &kstypes.UIDataSource{
+		Kind: kstypes.DataSourceTeamProgressStream, Params: map[string]string{"run_id": runID}}}
+}
+
+// WarRoomSnapshot：作战室完成态静态快照节点（data.kind=team_progress_snapshot）。
+func WarRoomSnapshot(runID string) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveWarRoom, Data: &kstypes.UIDataSource{
+		Kind: kstypes.DataSourceTeamProgressSnapshot, Params: map[string]string{"run_id": runID}}}
+}

@@ -47,3 +47,29 @@ func TestBuilder_ButtonAndForm(t *testing.T) {
 		t.Fatalf("form type = %q", form.Type)
 	}
 }
+
+func TestP3Builders(t *testing.T) {
+	chart := sdui.Chart(kstypes.SDUIChartProps{ChartType: "line", Categories: []string{"a"}, Series: []kstypes.SDUIChartSeries{{Name: "x", Values: []float64{1}}}})
+	if chart.Type != kstypes.PrimitiveChart {
+		t.Fatalf("chart type: %s", chart.Type)
+	}
+	rv := sdui.ReportViewer(kstypes.SDUIReportViewerProps{Title: "周报"}, sdui.Text(kstypes.SDUITextProps{Text: "正文"}))
+	if rv.Type != kstypes.PrimitiveReportViewer || len(rv.Children) != 1 {
+		t.Fatalf("report-viewer children: %d", len(rv.Children))
+	}
+	live := sdui.WarRoomLive("run-1")
+	if live.Type != kstypes.PrimitiveWarRoom || live.Data == nil || live.Data.Kind != kstypes.DataSourceTeamProgressStream || live.Data.Params["run_id"] != "run-1" {
+		t.Fatalf("war-room live data: %+v", live.Data)
+	}
+	snap := sdui.WarRoomSnapshot("run-2")
+	if snap.Data.Kind != kstypes.DataSourceTeamProgressSnapshot {
+		t.Fatalf("war-room snapshot kind: %s", snap.Data.Kind)
+	}
+	shell := sdui.ConsoleShell(kstypes.SDUIConsoleShellProps{Nav: kstypes.NavTree{Items: []kstypes.NavItem{{Key: "d", Label: "总览", Kind: kstypes.NavKindSDUI}}}})
+	if shell.Type != kstypes.PrimitiveConsoleShell {
+		t.Fatalf("console-shell type: %s", shell.Type)
+	}
+	if sdui.Slot(kstypes.SDUISlotProps{Path: "/brand"}).Type != kstypes.PrimitiveSlot {
+		t.Fatal("slot type")
+	}
+}
