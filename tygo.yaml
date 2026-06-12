@@ -11,4 +11,5 @@ packages:
       - "widget_postmessage.go"
       - "sdui_node.go"
       - "sdui_primitives.go"
+      - "nav_tree.go"
     fallback_type: "unknown"
