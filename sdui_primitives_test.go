@@ -1,6 +1,10 @@
 package kstypes
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestSDUIPrimitiveSchemas_Coverage(t *testing.T) {
 	// 首批原语必须全部注册
@@ -57,6 +61,79 @@ func TestSDUIButtonProps_Validate(t *testing.T) {
 	}
 	if err := (SDUIButtonProps{Label: "确认", Action: SDUIActionIntent{}}).Validate(); err == nil {
 		t.Error("empty action_id accepted")
+	}
+}
+
+func TestSDUIActionIntent_ConsoleNavigateJSON(t *testing.T) {
+	action := SDUIActionIntent{
+		ActionID: "open-regulation",
+		Intent:   SDUIActionIntentConsoleNavigate,
+		Route: &SDUIConsoleRouteTarget{
+			ViewKey:   "regulation-detail",
+			ActiveNav: "regulations",
+			Params:    map[string]string{"regulation_id": "{{display_id}}"},
+		},
+	}
+
+	b, err := json.Marshal(action)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"intent":"console.navigate"`) {
+		t.Fatalf("missing intent in %s", b)
+	}
+	if !strings.Contains(string(b), `"view_key":"regulation-detail"`) {
+		t.Fatalf("missing view key in %s", b)
+	}
+
+	var got SDUIActionIntent
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.Route == nil || got.Route.Params["regulation_id"] != "{{display_id}}" {
+		t.Fatalf("route round trip mismatch: %+v", got.Route)
+	}
+}
+
+func TestSDUITableProps_WithExplicitRowActions(t *testing.T) {
+	props := SDUITableProps{
+		Columns: []SDUITableColumn{{Key: "display_id", Label: "ID"}, {Key: "law", Label: "法规"}},
+		Rows:    []map[string]string{{"display_id": "5", "law": "中华人民共和国民法典"}},
+		PrimaryAction: &SDUITableActionTemplate{
+			Label: "查看条文",
+			Icon:  "book-open",
+			Action: SDUIActionIntent{
+				ActionID: "open-regulation",
+				Intent:   SDUIActionIntentConsoleNavigate,
+				Route: &SDUIConsoleRouteTarget{
+					ViewKey:   "regulation-detail",
+					ActiveNav: "regulations",
+					Params:    map[string]string{"regulation_id": "{{display_id}}"},
+				},
+			},
+		},
+	}
+
+	if err := props.Validate(); err != nil {
+		t.Fatalf("valid table rejected: %v", err)
+	}
+
+	b, err := json.Marshal(props)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(b), `"primary_action"`) {
+		t.Fatalf("primary action omitted: %s", b)
+	}
+}
+
+func TestSDUITableProps_BackwardCompatibleRowsOnly(t *testing.T) {
+	props := SDUITableProps{
+		Columns: []SDUITableColumn{{Key: "name", Label: "名称"}},
+		Rows:    []map[string]string{{"name": "旧表格"}},
+	}
+	if err := props.Validate(); err != nil {
+		t.Fatalf("legacy table rejected: %v", err)
 	}
 }
 

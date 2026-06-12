@@ -48,6 +48,34 @@ func TestBuilder_ButtonAndForm(t *testing.T) {
 	}
 }
 
+func TestBuilder_TableWithPrimaryAction(t *testing.T) {
+	table := sdui.Table(kstypes.SDUITableProps{
+		Columns: []kstypes.SDUITableColumn{{Key: "display_id", Label: "ID"}},
+		Rows:    []map[string]string{{"display_id": "5"}},
+		PrimaryAction: &kstypes.SDUITableActionTemplate{
+			Label: "查看条文",
+			Action: kstypes.SDUIActionIntent{
+				ActionID: "open-regulation",
+				Intent:   kstypes.SDUIActionIntentConsoleNavigate,
+				Route: &kstypes.SDUIConsoleRouteTarget{
+					ViewKey: "regulation-detail",
+					Params:  map[string]string{"regulation_id": "{{display_id}}"},
+				},
+			},
+		},
+	})
+	if table.Type != kstypes.PrimitiveTable {
+		t.Fatalf("table type = %q", table.Type)
+	}
+	var props kstypes.SDUITableProps
+	if err := json.Unmarshal(table.Props, &props); err != nil {
+		t.Fatalf("props: %v", err)
+	}
+	if props.PrimaryAction == nil || props.PrimaryAction.Action.Route.Params["regulation_id"] != "{{display_id}}" {
+		t.Fatalf("primary action mismatch: %+v", props.PrimaryAction)
+	}
+}
+
 func TestP3Builders(t *testing.T) {
 	chart := sdui.Chart(kstypes.SDUIChartProps{ChartType: "line", Categories: []string{"a"}, Series: []kstypes.SDUIChartSeries{{Name: "x", Values: []float64{1}}}})
 	if chart.Type != kstypes.PrimitiveChart {

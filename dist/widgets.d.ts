@@ -225,6 +225,8 @@ export interface SDUITableColumn {
 export interface SDUITableProps {
   columns: SDUITableColumn[];
   rows: { [key: string]: string}[];
+  primary_action?: SDUITableActionTemplate;
+  row_actions?: SDUITableActionTemplate[];
 }
 export interface SDUIStatusBadgeProps {
   label: string;
@@ -239,13 +241,33 @@ export interface SDUIEmptyStateProps {
   title: string;
   description?: string;
 }
+export const SDUIActionIntentConsoleNavigate = "console.navigate";
+export const SDUIActionIntentConsoleBack = "console.back";
+export interface SDUIConsoleRouteTarget {
+  view_key: string;
+  params?: { [key: string]: string};
+  active_nav?: string;
+  replace?: boolean;
+}
 /**
  * SDUIActionIntent 是 typed 交互意图（禁散文意图 + 前端字符串解析）。
  * ToolName 空则回退到当前 widget 的 toolName（见前端 action-dispatcher）。
+ * 既有 button/form 调用方可继续只传 action_id/tool_name；console 导航调用方传 intent/route。
  */
 export interface SDUIActionIntent {
   action_id: string;
   tool_name?: string;
+  intent?: string;
+  route?: SDUIConsoleRouteTarget;
+  payload?: { [key: string]: string};
+}
+export interface SDUITableActionTemplate {
+  label?: string;
+  icon?: string;
+  variant?: string;
+  disabled?: boolean;
+  tooltip?: string;
+  action: SDUIActionIntent;
 }
 export interface SDUIButtonProps {
   label: string;

@@ -140,13 +140,23 @@ type SDUITableColumn struct {
 }
 
 type SDUITableProps struct {
-	Columns []SDUITableColumn   `json:"columns"`
-	Rows    []map[string]string `json:"rows"`
+	Columns       []SDUITableColumn         `json:"columns"`
+	Rows          []map[string]string       `json:"rows"`
+	PrimaryAction *SDUITableActionTemplate  `json:"primary_action,omitempty"`
+	RowActions    []SDUITableActionTemplate `json:"row_actions,omitempty"`
 }
 
 func (p SDUITableProps) Validate() error {
 	if len(p.Columns) == 0 {
 		return fmt.Errorf("table.columns empty")
+	}
+	if p.PrimaryAction != nil && p.PrimaryAction.Action.ActionID == "" {
+		return fmt.Errorf("table.primary_action.action.action_id empty")
+	}
+	for i, action := range p.RowActions {
+		if action.Action.ActionID == "" {
+			return fmt.Errorf("table.row_actions[%d].action.action_id empty", i)
+		}
 	}
 	return nil
 }
@@ -182,11 +192,36 @@ func (p SDUIEmptyStateProps) Validate() error { return nil }
 
 // --- 交互原语 props ---
 
+const (
+	SDUIActionIntentConsoleNavigate = "console.navigate"
+	SDUIActionIntentConsoleBack     = "console.back"
+)
+
+type SDUIConsoleRouteTarget struct {
+	ViewKey   string            `json:"view_key"`
+	Params    map[string]string `json:"params,omitempty"`
+	ActiveNav string            `json:"active_nav,omitempty"`
+	Replace   bool              `json:"replace,omitempty"`
+}
+
 // SDUIActionIntent 是 typed 交互意图（禁散文意图 + 前端字符串解析）。
 // ToolName 空则回退到当前 widget 的 toolName（见前端 action-dispatcher）。
+// 既有 button/form 调用方可继续只传 action_id/tool_name；console 导航调用方传 intent/route。
 type SDUIActionIntent struct {
-	ActionID string `json:"action_id"`
-	ToolName string `json:"tool_name,omitempty"`
+	ActionID string                  `json:"action_id"`
+	ToolName string                  `json:"tool_name,omitempty"`
+	Intent   string                  `json:"intent,omitempty"`
+	Route    *SDUIConsoleRouteTarget `json:"route,omitempty"`
+	Payload  map[string]string       `json:"payload,omitempty"`
+}
+
+type SDUITableActionTemplate struct {
+	Label    string           `json:"label,omitempty"`
+	Icon     string           `json:"icon,omitempty"`
+	Variant  string           `json:"variant,omitempty"`
+	Disabled bool             `json:"disabled,omitempty"`
+	Tooltip  string           `json:"tooltip,omitempty"`
+	Action   SDUIActionIntent `json:"action"`
 }
 
 type SDUIButtonProps struct {
