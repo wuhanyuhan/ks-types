@@ -45,3 +45,15 @@ func TestCheckNavConfigConsistency(t *testing.T) {
 		})
 	}
 }
+
+func TestNavConsoleOpenMode(t *testing.T) {
+	t.Parallel()
+	// console 与 fullpage/tab 同档：业务前端，config_mode=none 合法
+	if reason, ok := CheckNavConfigConsistency(NavValid, "console", "none", false); !ok {
+		t.Fatalf("console+none should be valid: %s", reason)
+	}
+	// console + schema 非法（schema 只能 dialog 内渲）
+	if _, ok := CheckNavConfigConsistency(NavValid, "console", "schema", false); ok {
+		t.Fatal("console+schema should be invalid")
+	}
+}

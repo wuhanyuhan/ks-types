@@ -9,7 +9,7 @@ type NavState int
 const (
 	NavAbsent  NavState = iota // 无 nav 块
 	NavInvalid                 // 有 nav 块但字段不合法（缺 label/category/open_mode 或枚举错）
-	NavValid                   // nav 合法，调用方保证 openMode ∈ {dialog,fullpage,tab}
+	NavValid                   // nav 合法，调用方保证 openMode ∈ {dialog,fullpage,tab,console}
 )
 
 // nav/config_mode/open_mode 枚举（与 meta.go 既有语义一致）。
@@ -20,6 +20,7 @@ const (
 	navOpenModeDialog   = "dialog"
 	navOpenModeFullpage = "fullpage"
 	navOpenModeTab      = "tab"
+	navOpenModeConsole  = "console"
 )
 
 // CheckNavConfigConsistency 是 nav / config_mode / config_ui 组合能否产出"可用入口"的单一事实源。
@@ -27,7 +28,7 @@ const (
 // 供 keystone 摄入诊断、Go SDK / Python SDK 启动期 fail-fast 三方复用。
 //
 // configMode=="" 内部归一为 "none"（对齐 keystone buildNavRegistryRow 落库语义）。
-// navState=NavValid 时调用方保证 openMode ∈ {dialog,fullpage,tab}。
+// navState=NavValid 时调用方保证 openMode ∈ {dialog,fullpage,tab,console}。
 // 返回 (reason, ok)：ok=false 时 reason 是人话诊断。
 func CheckNavConfigConsistency(navState NavState, openMode, configMode string, hasConfigUI bool) (reason string, ok bool) {
 	if configMode == "" {
@@ -41,7 +42,7 @@ func CheckNavConfigConsistency(navState NavState, openMode, configMode string, h
 		}
 		return "", true
 	case NavInvalid:
-		return "nav 声明不合法（缺 label/category/open_mode 或 open_mode 非 dialog/fullpage/tab），nav 行会被丢弃 → 应用「无入口」", false
+		return "nav 声明不合法（缺 label/category/open_mode 或 open_mode 非 dialog/fullpage/tab/console），nav 行会被丢弃 → 应用「无入口」", false
 	}
 
 	// NavValid
@@ -58,7 +59,7 @@ func CheckNavConfigConsistency(navState NavState, openMode, configMode string, h
 		default:
 			return fmt.Sprintf("open_mode=dialog + config_mode=%s 无效：dialog 入口只支持 schema/iframe 配置弹窗 → 应用「无入口」", configMode), false
 		}
-	case navOpenModeFullpage, navOpenModeTab:
+	case navOpenModeFullpage, navOpenModeTab, navOpenModeConsole:
 		switch configMode {
 		case navConfigModeNone:
 			return "", true
@@ -70,5 +71,5 @@ func CheckNavConfigConsistency(navState NavState, openMode, configMode string, h
 			return fmt.Sprintf("open_mode=%s + config_mode=%s 组合未知", openMode, configMode), false
 		}
 	}
-	return "", true // 不可达：NavValid 保证 openMode ∈ 三枚举
+	return "", true // 不可达：NavValid 保证 openMode ∈ 四枚举
 }
