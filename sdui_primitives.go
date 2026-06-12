@@ -29,6 +29,12 @@ const (
 	PrimitiveTimeline      = "timeline"
 	PrimitiveCardGrid      = "card-grid"
 	PrimitiveImageVariants = "image-variants"
+
+	// 视图原语（P3 统一作战台）
+	PrimitiveChart        = "chart"
+	PrimitiveReportViewer = "report-viewer"
+	PrimitiveConsoleShell = "console-shell"
+	PrimitiveSlot         = "slot"
 )
 
 // --- 容器原语 props ---
@@ -227,6 +233,70 @@ type SDUILinkProps struct {
 func (p SDUILinkProps) Validate() error {
 	if p.Href == "" {
 		return fmt.Errorf("link.href empty")
+	}
+	return nil
+}
+
+// --- 视图原语 props（P3 统一作战台）---
+
+type SDUIChartSeries struct {
+	Name   string    `json:"name"`
+	Values []float64 `json:"values"`
+	Color  string    `json:"color,omitempty"` // 可选；缺省走主题调色板
+}
+
+// SDUIChartProps：中性图表（bar/line/pie），domain-neutral，不认识任何领域语义。
+type SDUIChartProps struct {
+	ChartType  string            `json:"chart_type"` // bar | line | pie
+	Title      string            `json:"title,omitempty"`
+	Categories []string          `json:"categories"` // x 轴 / 扇区类目
+	Series     []SDUIChartSeries `json:"series"`
+}
+
+func (p SDUIChartProps) Validate() error {
+	switch p.ChartType {
+	case "bar", "line", "pie":
+	default:
+		return fmt.Errorf("chart.chart_type invalid: %q", p.ChartType)
+	}
+	if len(p.Series) == 0 {
+		return fmt.Errorf("chart.series empty")
+	}
+	for i, s := range p.Series {
+		if len(s.Values) != len(p.Categories) {
+			return fmt.Errorf("chart.series[%d].values length %d != categories length %d", i, len(s.Values), len(p.Categories))
+		}
+	}
+	return nil
+}
+
+// SDUIReportViewerProps：结构化区块文档容器（children 是中性区块），加报告 chrome。
+type SDUIReportViewerProps struct {
+	Title    string `json:"title,omitempty"`
+	Subtitle string `json:"subtitle,omitempty"`
+}
+
+func (p SDUIReportViewerProps) Validate() error { return nil }
+
+// SDUIConsoleShellProps：console 外壳。Nav 是二级导航树；ActiveKey 是当前选中项（宿主据路由设）。
+// 内容 = 本节点唯一 child（当前视图，由宿主取并注入）。
+type SDUIConsoleShellProps struct {
+	Title     string  `json:"title,omitempty"`
+	ActiveKey string  `json:"active_key,omitempty"`
+	Nav       NavTree `json:"nav"`
+}
+
+func (p SDUIConsoleShellProps) Validate() error { return p.Nav.Validate() }
+
+// SDUISlotProps：专有岛嵌入。Path 指向 squad 自服务面板，经反代以同源 iframe 承载。
+type SDUISlotProps struct {
+	Title string `json:"title,omitempty"`
+	Path  string `json:"path"`
+}
+
+func (p SDUISlotProps) Validate() error {
+	if p.Path == "" {
+		return fmt.Errorf("slot.path empty")
 	}
 	return nil
 }

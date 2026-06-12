@@ -59,3 +59,30 @@ func TestSDUIButtonProps_Validate(t *testing.T) {
 		t.Error("empty action_id accepted")
 	}
 }
+
+func TestP3ViewPrimitiveProps(t *testing.T) {
+	// chart：series 值长度须 == categories
+	good := SDUIChartProps{ChartType: "bar", Categories: []string{"一月", "二月"}, Series: []SDUIChartSeries{{Name: "GMV", Values: []float64{1, 2}}}}
+	if err := good.Validate(); err != nil {
+		t.Fatalf("good chart rejected: %v", err)
+	}
+	bad := []interface{ Validate() error }{
+		SDUIChartProps{ChartType: "pyramid", Categories: []string{"a"}, Series: []SDUIChartSeries{{Values: []float64{1}}}},
+		SDUIChartProps{ChartType: "bar", Categories: []string{"a", "b"}, Series: []SDUIChartSeries{{Values: []float64{1}}}}, // 长度不齐
+		SDUIChartProps{ChartType: "bar", Categories: []string{"a"}, Series: nil},                                           // 空 series
+		SDUISlotProps{Path: ""},                                                                                            // slot 缺 path
+		SDUIConsoleShellProps{Nav: NavTree{}},                                                                              // nav 空
+	}
+	for i, p := range bad {
+		if err := p.Validate(); err == nil {
+			t.Errorf("bad[%d]: expected error", i)
+		}
+	}
+	// report-viewer / 合法 console-shell 无必填
+	if err := (SDUIReportViewerProps{Title: "周报"}).Validate(); err != nil {
+		t.Errorf("report-viewer: %v", err)
+	}
+	if err := (SDUIConsoleShellProps{Title: "营销台", Nav: NavTree{Items: []NavItem{{Key: "d", Label: "总览", Kind: NavKindSDUI}}}}).Validate(); err != nil {
+		t.Errorf("console-shell: %v", err)
+	}
+}
