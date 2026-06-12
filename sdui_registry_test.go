@@ -13,3 +13,21 @@ func TestSDUIPrimitiveSchemas_WarRoomRegistered(t *testing.T) {
 		t.Fatalf("war-room 不应在 ContainerPrimitives（它无 children，子视图前端从实时流组装）")
 	}
 }
+
+func TestP3PrimitivesRegistered(t *testing.T) {
+	for _, typ := range []string{PrimitiveChart, PrimitiveReportViewer, PrimitiveConsoleShell, PrimitiveSlot} {
+		if _, ok := SDUIPrimitiveSchemas[typ]; !ok {
+			t.Errorf("primitive %q not in SDUIPrimitiveSchemas", typ)
+		}
+	}
+	// report-viewer / console-shell 是容器（可带 children）；chart / slot 是叶子。
+	if !ContainerPrimitives[PrimitiveReportViewer] || !ContainerPrimitives[PrimitiveConsoleShell] {
+		t.Error("report-viewer/console-shell must be container primitives")
+	}
+	if ContainerPrimitives[PrimitiveChart] || ContainerPrimitives[PrimitiveSlot] {
+		t.Error("chart/slot must be leaf primitives")
+	}
+	if DataSourceTeamProgressSnapshot != "team_progress_snapshot" {
+		t.Errorf("snapshot data source kind wire value drift: %q", DataSourceTeamProgressSnapshot)
+	}
+}

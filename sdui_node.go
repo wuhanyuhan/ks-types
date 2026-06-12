@@ -33,6 +33,11 @@ type UIDataSource struct {
 // （Params={run_id}）。前端经反代直连 squad 的 /stream SSE，reduceFrame 聚合成 TeamState。
 const DataSourceTeamProgressStream = "team_progress_stream"
 
+// DataSourceTeamProgressSnapshot：订阅某 run 的「团队进度持久快照」（Params={run_id}）。
+// 完成态运行进度流已超 Hub TTL → 前端经反代一次性 GET squad /snapshot 取 typed TeamState 持久快照
+// （花名册 + 交付物 + 决策记录 + 终态摘要），用 war-room 静态模式渲染（不订阅 SSE）。
+const DataSourceTeamProgressSnapshot = "team_progress_snapshot"
+
 // Depth 返回以本节点为根的树深度（单节点为 1）。
 func (n UINode) Depth() int {
 	max := 0

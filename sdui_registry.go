@@ -45,10 +45,17 @@ var SDUIPrimitiveSchemas = map[string]reflect.Type{
 	PrimitiveImageVariants: reflect.TypeOf(WidgetImageVariantsV1{}),
 	// 协作（P2 作战室）：data 驱动、无 props；子视图前端从实时流组装，不下发为独立 wire 原语。
 	PrimitiveWarRoom: reflect.TypeOf(SDUIWarRoomProps{}),
+	// 视图原语（P3 统一作战台）
+	PrimitiveChart:        reflect.TypeOf(SDUIChartProps{}),
+	PrimitiveReportViewer: reflect.TypeOf(SDUIReportViewerProps{}),
+	PrimitiveConsoleShell: reflect.TypeOf(SDUIConsoleShellProps{}),
+	PrimitiveSlot:         reflect.TypeOf(SDUISlotProps{}),
 }
 
 // ContainerPrimitives 标记哪些原语允许 children（容器）。校验器据此拒绝叶子原语带 children。
 var ContainerPrimitives = map[string]bool{
 	PrimitiveStack: true, PrimitiveGrid: true, PrimitiveCard: true,
 	PrimitiveSection: true, PrimitiveTabs: true, PrimitiveSplit: true,
+	// 视图容器（P3）：report-viewer 装区块、console-shell 装当前视图 child
+	PrimitiveReportViewer: true, PrimitiveConsoleShell: true,
 }
