@@ -189,6 +189,10 @@ type RuntimeSpec struct {
 	Entry      string      `yaml:"entry,omitempty" json:"entry,omitempty"`
 	WorkingDir string      `yaml:"working_dir,omitempty" json:"working_dir,omitempty"`
 	Image      string      `yaml:"image,omitempty" json:"image,omitempty"`
+	// WritableRootFS 显式 opt-in 容器可写 rootfs（能在容器内 apt/pip 装软件、写系统目录）。
+	// 零值 false = 只读 rootfs（安全默认，所有未声明的 container app 保持只读）。
+	// keystone buildAgentAppSpec 据此填 agentclient.AppSpec.ReadOnlyRootFS = !WritableRootFS。
+	WritableRootFS bool `yaml:"writable_root_fs,omitempty" json:"writable_root_fs,omitempty"`
 	// 端口：keystone 拉起约定容器内监听 8080，manifest 不声明 port/ports。
 	Volumes        []string      `yaml:"volumes,omitempty" json:"volumes,omitempty"`
 	HealthCheck    string        `yaml:"health_check,omitempty" json:"health_check,omitempty"`

@@ -500,6 +500,41 @@ runtime:
 	}
 }
 
+func TestParseRuntimeSpec_WritableRootFS(t *testing.T) {
+	type wrapper struct {
+		Runtime RuntimeSpec `yaml:"runtime"`
+	}
+
+	// 声明 writable_root_fs: true -> 字段为 true
+	optIn := `
+runtime:
+  mode: container
+  image: registry.local/sandbox:4.0.0
+  writable_root_fs: true
+`
+	var w wrapper
+	if err := yaml.Unmarshal([]byte(optIn), &w); err != nil {
+		t.Fatalf("unmarshal opt-in: %v", err)
+	}
+	if !w.Runtime.WritableRootFS {
+		t.Errorf("WritableRootFS opt-in: got false, want true")
+	}
+
+	// 未声明 -> 安全默认 false（只读）
+	def := `
+runtime:
+  mode: container
+  image: registry.local/other:1.0.0
+`
+	var d wrapper
+	if err := yaml.Unmarshal([]byte(def), &d); err != nil {
+		t.Fatalf("unmarshal default: %v", err)
+	}
+	if d.Runtime.WritableRootFS {
+		t.Errorf("WritableRootFS default: got true, want false（安全默认只读）")
+	}
+}
+
 // TestAppSpec_AuthorIcon_Preserved 守护 Author + Icon 字段 yaml round-trip 后保留。
 //
 // 历史 bug：AppSpec 没这两字段时，ks-devkit WriteManifestYAML 调用
