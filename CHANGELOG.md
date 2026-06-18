@@ -2,6 +2,11 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.43.0
+
+### Added
+- 就绪端点 wire 契约（`GET /ks-readiness` / `POST /ks-readiness/init`）：`ReadinessGateStatus`（pending/running/ready/failed）+ `IsValid()`、`ReadinessGateState`（id/status/progress/message）、`ReadinessReport`（GET 响应）、`ReadinessInitRequest`（POST 请求体）。配 ks-devkit Go/Python SDK 实现端点、keystone 后端轮询消费；是 `ReadinessSpec`（manifest 声明）的运行时状态孪生。
+
 ## v0.42.0
 
 ### Added

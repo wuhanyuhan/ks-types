@@ -1,6 +1,7 @@
 package kstypes
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -195,5 +196,71 @@ func TestAppSpec_Validate_SurfacesReadinessError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "readiness") {
 		t.Errorf("error should mention readiness, got: %v", err)
+	}
+}
+
+func TestReadinessGateStatus_IsValid(t *testing.T) {
+	cases := []struct {
+		status ReadinessGateStatus
+		valid  bool
+	}{
+		{ReadinessGateStatusPending, true},
+		{ReadinessGateStatusRunning, true},
+		{ReadinessGateStatusReady, true},
+		{ReadinessGateStatusFailed, true},
+		{ReadinessGateStatus(""), false},
+		{ReadinessGateStatus("bogus"), false},
+	}
+	for _, c := range cases {
+		if got := c.status.IsValid(); got != c.valid {
+			t.Errorf("ReadinessGateStatus(%q).IsValid() = %v, want %v", c.status, got, c.valid)
+		}
+	}
+}
+
+func TestReadinessReport_JSONShape(t *testing.T) {
+	// ready 门无 progress/message -> omitempty 应省略，锁定跨语言 wire 形状。
+	readyOnly, err := json.Marshal(ReadinessGateState{ID: "warm_cache", Status: ReadinessGateStatusReady})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if string(readyOnly) != `{"id":"warm_cache","status":"ready"}` {
+		t.Errorf("ready gate JSON = %s, want omitempty progress/message", readyOnly)
+	}
+
+	p := 42
+	orig := ReadinessReport{Gates: []ReadinessGateState{
+		{ID: "corpus_embed", Status: ReadinessGateStatusRunning, Progress: &p, Message: "已嵌入 1200/2900 条"},
+		{ID: "warm_cache", Status: ReadinessGateStatusReady},
+	}}
+	data, err := json.Marshal(orig)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if string(data) != `{"gates":[{"id":"corpus_embed","status":"running","progress":42,"message":"已嵌入 1200/2900 条"},{"id":"warm_cache","status":"ready"}]}` {
+		t.Errorf("report JSON = %s, want exact gates wire shape", data)
+	}
+	var got ReadinessReport
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(got.Gates) != 2 || got.Gates[0].ID != "corpus_embed" || got.Gates[0].Progress == nil || *got.Gates[0].Progress != 42 {
+		t.Fatalf("roundtrip mismatch: %#v", got)
+	}
+
+	initData, err := json.Marshal(ReadinessInitRequest{GateID: "corpus_embed"})
+	if err != nil {
+		t.Fatalf("marshal init req: %v", err)
+	}
+	if string(initData) != `{"gate_id":"corpus_embed"}` {
+		t.Errorf("ReadinessInitRequest JSON = %s, want gate_id wire key", initData)
+	}
+
+	var ir ReadinessInitRequest
+	if err := json.Unmarshal([]byte(`{"gate_id":"corpus_embed"}`), &ir); err != nil {
+		t.Fatalf("unmarshal init req: %v", err)
+	}
+	if ir.GateID != "corpus_embed" {
+		t.Errorf("ReadinessInitRequest.GateID = %q, want corpus_embed", ir.GateID)
 	}
 }

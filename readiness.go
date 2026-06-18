@@ -103,3 +103,55 @@ func (r ReadinessSpec) Validate() error {
 	}
 	return nil
 }
+
+// ── 就绪端点运行时 wire 契约（GET /ks-readiness、POST /ks-readiness/init）──
+// 与 ReadinessSpec（manifest 声明）同仓同文件：声明描述「门是什么」，下列类型描述「门此刻什么状态」。
+// 由应用经 ks-devkit SDK 上报、keystone 后端轮询消费——单一事实源的跨仓 wire 契约。
+
+// ReadinessGateStatus 是单个 init_task 就绪门的运行时状态（app 上报 + keystone 持久化/聚合共用）。
+type ReadinessGateStatus string
+
+const (
+	// ReadinessGateStatusPending 已声明/已 seed，尚未触发初始化。
+	ReadinessGateStatusPending ReadinessGateStatus = "pending"
+	// ReadinessGateStatusRunning 初始化执行中（progress 反映进度）。
+	ReadinessGateStatusRunning ReadinessGateStatus = "running"
+	// ReadinessGateStatusReady 已满足。
+	ReadinessGateStatusReady ReadinessGateStatus = "ready"
+	// ReadinessGateStatusFailed 初始化失败（message 给原因，可重试 / 重跑）。
+	ReadinessGateStatusFailed ReadinessGateStatus = "failed"
+)
+
+// IsValid 返回该状态是否为受支持的封闭枚举值。
+func (s ReadinessGateStatus) IsValid() bool {
+	switch s {
+	case ReadinessGateStatusPending, ReadinessGateStatusRunning,
+		ReadinessGateStatusReady, ReadinessGateStatusFailed:
+		return true
+	}
+	return false
+}
+
+// ReadinessGateState 是单个 init_task 门的运行时状态，应用经 GET /ks-readiness 上报。
+type ReadinessGateState struct {
+	// ID 对应 manifest readiness.gates[].id（kind=init_task）。
+	ID string `json:"id"`
+	// Status 当前运行时状态。
+	Status ReadinessGateStatus `json:"status"`
+	// Progress 初始化进度 0-100；未开始 / 无进度时省略。
+	Progress *int `json:"progress,omitempty"`
+	// Message 人话状态 / 错误原因；可空时省略。
+	Message string `json:"message,omitempty"`
+}
+
+// ReadinessReport 是 GET /ks-readiness 的响应：本应用全部 init_task 门的运行时状态。
+type ReadinessReport struct {
+	// Gates 是本应用全部 init_task 门的运行时状态列表。
+	Gates []ReadinessGateState `json:"gates"`
+}
+
+// ReadinessInitRequest 是 POST /ks-readiness/init 的请求体：触发 / 重触发某 init_task 门。
+type ReadinessInitRequest struct {
+	// GateID 要触发的 init_task 门 id（对应 manifest readiness.gates[].id）。
+	GateID string `json:"gate_id"`
+}
