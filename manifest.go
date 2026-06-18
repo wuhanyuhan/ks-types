@@ -112,6 +112,7 @@ type AppSpec struct {
 	ManagedResources ManagedResourcesSpec `yaml:"managed_resources,omitempty" json:"managed_resources,omitempty"`
 	ManagedSecrets   ManagedSecretsSpec   `yaml:"managed_secrets,omitempty" json:"managed_secrets,omitempty"`
 	PlatformServices PlatformServicesSpec `yaml:"platform_services,omitempty" json:"platform_services,omitempty"`
+	Readiness        ReadinessSpec        `yaml:"readiness,omitempty" json:"readiness,omitempty"`
 	// StandaloneFallback 声明非 keystone 托管模式下的本地资源 fallback 配置。
 	// 与 ManagedResources 一一对应：managed 模式下忽略此段，standalone 模式下作为
 	// 唯一权威源。
