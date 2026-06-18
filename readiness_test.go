@@ -1,6 +1,9 @@
 package kstypes
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestReadinessGateKind_IsValid(t *testing.T) {
 	cases := []struct {
@@ -83,5 +86,114 @@ readiness:
 	}
 	if !g1.Idempotent || g1.TimeoutSeconds != 600 {
 		t.Errorf("gate1 idempotent=%v timeout=%d, want true/600", g1.Idempotent, g1.TimeoutSeconds)
+	}
+}
+
+func TestReadinessSpec_Validate(t *testing.T) {
+	blockingFalse := false
+	cases := []struct {
+		name  string
+		spec  ReadinessSpec
+		valid bool
+	}{
+		{
+			name:  "empty gates ok",
+			spec:  ReadinessSpec{},
+			valid: true,
+		},
+		{
+			name: "valid config gate",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "api_key", Kind: ReadinessGateKindConfig, RequiresSecrets: []string{"api_key"}},
+			}},
+			valid: true,
+		},
+		{
+			name: "valid init_task gate",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "corpus_embed", Kind: ReadinessGateKindInitTask, TimeoutSeconds: 600},
+			}},
+			valid: true,
+		},
+		{
+			name: "missing id",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{Kind: ReadinessGateKindConfig, RequiresSecrets: []string{"k"}},
+			}},
+			valid: false,
+		},
+		{
+			name: "bad id format",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "Bad ID", Kind: ReadinessGateKindConfig, RequiresSecrets: []string{"k"}},
+			}},
+			valid: false,
+		},
+		{
+			name: "duplicate id",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "g1", Kind: ReadinessGateKindConfig, RequiresSecrets: []string{"k"}},
+				{ID: "g1", Kind: ReadinessGateKindInitTask},
+			}},
+			valid: false,
+		},
+		{
+			name: "invalid kind",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "g1", Kind: ReadinessGateKind("bogus")},
+			}},
+			valid: false,
+		},
+		{
+			name: "config gate without requires",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "g1", Kind: ReadinessGateKindConfig},
+			}},
+			valid: false,
+		},
+		{
+			name: "init_task negative timeout",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "g1", Kind: ReadinessGateKindInitTask, TimeoutSeconds: -1},
+			}},
+			valid: false,
+		},
+		{
+			name: "blocking false is fine",
+			spec: ReadinessSpec{Gates: []ReadinessGate{
+				{ID: "g1", Kind: ReadinessGateKindInitTask, Blocking: &blockingFalse},
+			}},
+			valid: true,
+		},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			err := c.spec.Validate()
+			gotValid := err == nil
+			if gotValid != c.valid {
+				t.Errorf("Validate() valid=%v want %v (err=%v)", gotValid, c.valid, err)
+			}
+		})
+	}
+}
+
+func TestAppSpec_Validate_SurfacesReadinessError(t *testing.T) {
+	spec := &AppSpec{
+		ID: "test-app", Name: "x", Version: "1.0.0", Type: AppTypeApp,
+		Runtime: RuntimeSpec{Mode: RuntimeModeContainer},
+		Provides: ProvidesSpec{Capabilities: []CapabilitySpec{
+			{Name: "x", ExecutionMode: "sync", Backend: BackendSpec{Kind: "mcp_tool", ToolName: "x"}},
+		}},
+		Readiness: ReadinessSpec{Gates: []ReadinessGate{
+			{ID: "g1", Kind: ReadinessGateKindConfig}, // 缺 requires_* → 非法
+		}},
+	}
+	err := spec.Validate()
+	if err == nil {
+		t.Fatal("expected AppSpec.Validate() to surface readiness error, got nil")
+	}
+	if !strings.Contains(err.Error(), "readiness") {
+		t.Errorf("error should mention readiness, got: %v", err)
 	}
 }

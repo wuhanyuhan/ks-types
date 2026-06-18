@@ -1,5 +1,13 @@
 package kstypes
 
+import (
+	"fmt"
+	"regexp"
+)
+
+// readinessGateIDRegex 是就绪门 id 的命名格式（封闭格式，同 app 内引用用）。
+var readinessGateIDRegex = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,63}$`)
+
 // ReadinessGateKind 是就绪门的种类。
 type ReadinessGateKind string
 
@@ -60,4 +68,38 @@ func (g ReadinessGate) IsBlocking() bool {
 // IsAutoInit 返回 init_task 门是否装完自动触发（默认 true）。
 func (g ReadinessGate) IsAutoInit() bool {
 	return g.AutoInit == nil || *g.AutoInit
+}
+
+// Validate 校验就绪声明：门 id 必填且合法、同 app 内唯一、kind 合法，
+// 并按 kind 校验各自专用字段。空门集合合法（天然就绪）。
+func (r ReadinessSpec) Validate() error {
+	seen := make(map[string]struct{}, len(r.Gates))
+	for i, g := range r.Gates {
+		if g.ID == "" {
+			return fmt.Errorf("readiness.gates[%d].id 为必填项", i)
+		}
+		if !readinessGateIDRegex.MatchString(g.ID) {
+			return fmt.Errorf("readiness.gates[%d].id %q 非法（要求 ^[a-z][a-z0-9_-]{0,63}$）", i, g.ID)
+		}
+		if _, dup := seen[g.ID]; dup {
+			return fmt.Errorf("readiness.gates[%d].id %q 重复", i, g.ID)
+		}
+		seen[g.ID] = struct{}{}
+
+		if !g.Kind.IsValid() {
+			return fmt.Errorf("readiness.gates[%d].kind %q 不合法（允许 config / init_task）", i, g.Kind)
+		}
+
+		switch g.Kind {
+		case ReadinessGateKindConfig:
+			if len(g.RequiresConfig) == 0 && len(g.RequiresSecrets) == 0 {
+				return fmt.Errorf("readiness.gates[%d] (kind=config) 必须声明 requires_config 或 requires_secrets 至少一项", i)
+			}
+		case ReadinessGateKindInitTask:
+			if g.TimeoutSeconds < 0 {
+				return fmt.Errorf("readiness.gates[%d].timeout_seconds 不能为负", i)
+			}
+		}
+	}
+	return nil
 }

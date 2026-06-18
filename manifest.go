@@ -706,6 +706,9 @@ func (m *AppSpec) Validate() error {
 	if err := m.PlatformServices.Validate(); err != nil {
 		return fmt.Errorf("manifest: platform_services: %w", err)
 	}
+	if err := m.Readiness.Validate(); err != nil {
+		return fmt.Errorf("manifest: %w", err)
+	}
 
 	// task_templates 段校验
 	for i, t := range m.TaskTemplates {
