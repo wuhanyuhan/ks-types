@@ -2,6 +2,14 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.42.0
+
+### Added
+- `AppSpec.Readiness`（`readiness.gates`）：应用就绪契约声明。每个 gate 含 `id` / `kind`(`config`|`init_task`) / `blocking`(默认 true) / `title` / `description`；`config`
+门用 `requires_config`/`requires_secrets` 引用应用已声明字段，`init_task` 门含 `idempotent` / `auto_init`(默认 true) / `timeout_seconds`。新增
+`ReadinessGateKind.IsValid()`、`ReadinessGate.IsBlocking()/IsAutoInit()`、`ReadinessSpec.Validate()`，并接入 `AppSpec.Validate()`。
+- 未声明 `readiness` 的应用保持天然就绪（向后兼容，**无 breaking**）。readiness 为纯 Go 侧字段，不进 tygo / TS widgets 分发。
+
 ## [v0.38.0] - 2026-06-11（无前端 tag：纯后端注册表，TS 无变更）
 
 ### Added (SDUI 作战室原语注册)
