@@ -17,6 +17,8 @@ export const PMMethodAppUpdateModelContext = 'app.updateModelContext'
 export const PMMethodAppClose = 'app.close'
 export const PMMethodAppNotify = 'app.notify'
 export const PMMethodAppOpenLink = 'app.openLink'
+export const PMMethodMountedRouteChanged = 'keystone.mounted.route.changed'
+export const PMMethodMountedRouteRestore = 'keystone.mounted.route.restore'
 
 // iframe sandbox flag（自定义 widget 容器）。
 export const SandboxFlagAllowDownloads = 'allow-downloads'

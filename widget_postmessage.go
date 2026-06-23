@@ -17,6 +17,34 @@ const (
 	PMMethodAppOpenLink           = "app.openLink"
 )
 
+// mounted fullpage 子路由同步 postMessage 方法名（host ↔ iframe）。
+const (
+	// PMMethodMountedRouteChanged 表示 iframe 内应用子路由已变化，host 应更新父级 URL。
+	PMMethodMountedRouteChanged = "keystone.mounted.route.changed"
+	// PMMethodMountedRouteRestore 表示 host 要求 iframe 恢复到指定子路由。
+	PMMethodMountedRouteRestore = "keystone.mounted.route.restore"
+)
+
+// MountedRouteChangedMessage 是 mounted 应用发给 Keystone host 的子路由变化消息。
+type MountedRouteChangedMessage struct {
+	Type    string `json:"type"`
+	Version int    `json:"version"`
+	AppID   string `json:"appId"`
+	Path    string `json:"path"`
+	Hash    string `json:"hash,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Replace bool   `json:"replace,omitempty"`
+}
+
+// MountedRouteRestoreMessage 是 Keystone host 发给 mounted 应用的子路由恢复消息。
+type MountedRouteRestoreMessage struct {
+	Type    string `json:"type"`
+	Version int    `json:"version"`
+	Path    string `json:"path"`
+	Hash    string `json:"hash,omitempty"`
+	Replace bool   `json:"replace,omitempty"`
+}
+
 // iframe sandbox flag 常量（自定义 widget 容器用）。
 //
 // 默认基础集（不可变）：allow-scripts allow-forms
