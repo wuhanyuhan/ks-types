@@ -19,7 +19,7 @@ type MetaNavDecl struct {
 // MetaPermissionDecl 是 MCP 自声明的权限码目录条目（v0.5.0 新增）。
 // keystone 据此在权限管理后台展示并分配给角色。
 type MetaPermissionDecl struct {
-	Code         string   `json:"code"`                    // mcp.{mcp_id}.{action}
+	Code         string   `json:"code"` // mcp.{mcp_id}.{action}
 	Label        string   `json:"label"`
 	DefaultRoles []string `json:"default_roles,omitempty"` // MVP 只 ['admin']
 }
