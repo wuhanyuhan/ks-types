@@ -44,11 +44,17 @@ func TestSDUIStackProps_Validate(t *testing.T) {
 }
 
 func TestSDUIGridProps_Validate(t *testing.T) {
-	if err := (SDUIGridProps{Columns: 3}).Validate(); err != nil {
-		t.Errorf("valid grid rejected: %v", err)
+	// 1..6 均有效（概览卡放开 5/6 列：消除 5 张概览卡 4+1 右侧留白）
+	for _, n := range []int{1, 3, 4, 5, 6} {
+		if err := (SDUIGridProps{Columns: n}).Validate(); err != nil {
+			t.Errorf("valid grid columns=%d rejected: %v", n, err)
+		}
 	}
-	if err := (SDUIGridProps{Columns: 9}).Validate(); err == nil {
-		t.Error("grid.columns=9 accepted")
+	// 越界（<1 或 >6）拒绝
+	for _, n := range []int{0, 7, 9} {
+		if err := (SDUIGridProps{Columns: n}).Validate(); err == nil {
+			t.Errorf("grid.columns=%d accepted（应越界拒绝）", n)
+		}
 	}
 }
 
@@ -146,9 +152,9 @@ func TestP3ViewPrimitiveProps(t *testing.T) {
 	bad := []interface{ Validate() error }{
 		SDUIChartProps{ChartType: "pyramid", Categories: []string{"a"}, Series: []SDUIChartSeries{{Values: []float64{1}}}},
 		SDUIChartProps{ChartType: "bar", Categories: []string{"a", "b"}, Series: []SDUIChartSeries{{Values: []float64{1}}}}, // 长度不齐
-		SDUIChartProps{ChartType: "bar", Categories: []string{"a"}, Series: nil},                                           // 空 series
-		SDUISlotProps{Path: ""},                                                                                            // slot 缺 path
-		SDUIConsoleShellProps{Nav: NavTree{}},                                                                              // nav 空
+		SDUIChartProps{ChartType: "bar", Categories: []string{"a"}, Series: nil},                                            // 空 series
+		SDUISlotProps{Path: ""},               // slot 缺 path
+		SDUIConsoleShellProps{Nav: NavTree{}}, // nav 空
 	}
 	for i, p := range bad {
 		if err := p.Validate(); err == nil {

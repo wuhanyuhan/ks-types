@@ -54,13 +54,13 @@ func (p SDUIStackProps) Validate() error {
 }
 
 type SDUIGridProps struct {
-	Columns int    `json:"columns"` // 1..4
+	Columns int    `json:"columns"` // 1..6
 	Gap     string `json:"gap,omitempty"`
 }
 
 func (p SDUIGridProps) Validate() error {
-	if p.Columns < 1 || p.Columns > 4 {
-		return fmt.Errorf("grid.columns out of range 1..4: %d", p.Columns)
+	if p.Columns < 1 || p.Columns > 6 {
+		return fmt.Errorf("grid.columns out of range 1..6: %d", p.Columns)
 	}
 	return nil
 }
