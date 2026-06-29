@@ -181,7 +181,7 @@ export interface SDUIStackProps {
   gap?: string; // sm | md | lg
 }
 export interface SDUIGridProps {
-  columns: number /* int */; // 1..4
+  columns: number /* int */; // 1..6
   gap?: string;
 }
 export interface SDUICardProps {
@@ -221,12 +221,22 @@ export interface SDUIFieldGroupProps {
 export interface SDUITableColumn {
   key: string;
   label: string;
+  type?: string; // text | datetime | status | number | id
+  width?: number /* int */; // px；0 表示由前端按类型分配
+  align?: string; // left | center | right
+  ellipsis?: boolean;
+  sortable?: boolean;
+  filterable?: boolean;
 }
 export interface SDUITableProps {
   columns: SDUITableColumn[];
   rows: { [key: string]: string}[];
   primary_action?: SDUITableActionTemplate;
   row_actions?: SDUITableActionTemplate[];
+  page_size?: number /* int */;
+  searchable?: boolean;
+  search_placeholder?: string;
+  search_keys?: string[];
 }
 export interface SDUIStatusBadgeProps {
   label: string;
@@ -390,6 +400,36 @@ export const PMMethodAppNotify = "app.notify";
  * 协议层只定义方法名（wire format string），具体 payload 由前端 SDK 与 squad SDK 自行规范。
  */
 export const PMMethodAppOpenLink = "app.openLink";
+/**
+ * PMMethodMountedRouteChanged 表示 iframe 内应用子路由已变化，host 应更新父级 URL。
+ */
+export const PMMethodMountedRouteChanged = "keystone.mounted.route.changed";
+/**
+ * PMMethodMountedRouteRestore 表示 host 要求 iframe 恢复到指定子路由。
+ */
+export const PMMethodMountedRouteRestore = "keystone.mounted.route.restore";
+/**
+ * MountedRouteChangedMessage 是 mounted 应用发给 Keystone host 的子路由变化消息。
+ */
+export interface MountedRouteChangedMessage {
+  type: string;
+  version: number /* int */;
+  appId: string;
+  path: string;
+  hash?: string;
+  title?: string;
+  replace?: boolean;
+}
+/**
+ * MountedRouteRestoreMessage 是 Keystone host 发给 mounted 应用的子路由恢复消息。
+ */
+export interface MountedRouteRestoreMessage {
+  type: string;
+  version: number /* int */;
+  path: string;
+  hash?: string;
+  replace?: boolean;
+}
 /**
  * iframe sandbox flag 常量（自定义 widget 容器用）。
  * 默认基础集（不可变）：allow-scripts allow-forms

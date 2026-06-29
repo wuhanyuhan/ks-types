@@ -135,20 +135,48 @@ type SDUIFieldGroupProps struct {
 func (p SDUIFieldGroupProps) Validate() error { return nil }
 
 type SDUITableColumn struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
+	Key        string `json:"key"`
+	Label      string `json:"label"`
+	Type       string `json:"type,omitempty"`  // text | datetime | status | number | id
+	Width      int    `json:"width,omitempty"` // px；0 表示由前端按类型分配
+	Align      string `json:"align,omitempty"` // left | center | right
+	Ellipsis   *bool  `json:"ellipsis,omitempty"`
+	Sortable   *bool  `json:"sortable,omitempty"`
+	Filterable bool   `json:"filterable,omitempty"`
 }
 
 type SDUITableProps struct {
-	Columns       []SDUITableColumn         `json:"columns"`
-	Rows          []map[string]string       `json:"rows"`
-	PrimaryAction *SDUITableActionTemplate  `json:"primary_action,omitempty"`
-	RowActions    []SDUITableActionTemplate `json:"row_actions,omitempty"`
+	Columns           []SDUITableColumn         `json:"columns"`
+	Rows              []map[string]string       `json:"rows"`
+	PrimaryAction     *SDUITableActionTemplate  `json:"primary_action,omitempty"`
+	RowActions        []SDUITableActionTemplate `json:"row_actions,omitempty"`
+	PageSize          int                       `json:"page_size,omitempty"`
+	Searchable        *bool                     `json:"searchable,omitempty"`
+	SearchPlaceholder string                    `json:"search_placeholder,omitempty"`
+	SearchKeys        []string                  `json:"search_keys,omitempty"`
 }
 
 func (p SDUITableProps) Validate() error {
 	if len(p.Columns) == 0 {
 		return fmt.Errorf("table.columns empty")
+	}
+	for i, col := range p.Columns {
+		switch col.Type {
+		case "", "text", "datetime", "status", "number", "id":
+		default:
+			return fmt.Errorf("table.columns[%d].type invalid: %q", i, col.Type)
+		}
+		switch col.Align {
+		case "", "left", "center", "right":
+		default:
+			return fmt.Errorf("table.columns[%d].align invalid: %q", i, col.Align)
+		}
+		if col.Width < 0 {
+			return fmt.Errorf("table.columns[%d].width negative: %d", i, col.Width)
+		}
+	}
+	if p.PageSize < 0 {
+		return fmt.Errorf("table.page_size negative: %d", p.PageSize)
 	}
 	if p.PrimaryAction != nil && p.PrimaryAction.Action.ActionID == "" {
 		return fmt.Errorf("table.primary_action.action.action_id empty")

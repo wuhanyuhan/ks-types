@@ -143,6 +143,63 @@ func TestSDUITableProps_BackwardCompatibleRowsOnly(t *testing.T) {
 	}
 }
 
+func TestSDUITableProps_PresentationHintsJSONAndValidate(t *testing.T) {
+	searchable := true
+	ellipsis := false
+	sortable := false
+	props := SDUITableProps{
+		Columns: []SDUITableColumn{
+			{Key: "id", Label: "ID", Type: "id", Width: 72, Align: "right", Sortable: &sortable},
+			{Key: "title", Label: "任务", Ellipsis: &ellipsis},
+			{Key: "status", Label: "状态", Type: "status", Filterable: true},
+			{Key: "updated", Label: "更新时间", Type: "datetime", Width: 160},
+		},
+		Rows:              []map[string]string{{"id": "42", "title": "采购合同审查", "status": "warning:待确认", "updated": "2026-06-29T09:00:00Z"}},
+		PageSize:          20,
+		Searchable:        &searchable,
+		SearchPlaceholder: "搜索任务、专家或状态",
+		SearchKeys:        []string{"title", "status", "expert"},
+	}
+	if err := props.Validate(); err != nil {
+		t.Fatalf("valid hinted table rejected: %v", err)
+	}
+
+	b, err := json.Marshal(props)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(b)
+	for _, want := range []string{
+		`"type":"datetime"`,
+		`"width":160`,
+		`"filterable":true`,
+		`"sortable":false`,
+		`"ellipsis":false`,
+		`"searchable":true`,
+		`"search_placeholder":"搜索任务、专家或状态"`,
+		`"search_keys":["title","status","expert"]`,
+		`"page_size":20`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %s in %s", want, got)
+		}
+	}
+}
+
+func TestSDUITableProps_PresentationHintsValidateRejectsInvalidValues(t *testing.T) {
+	cases := []SDUITableProps{
+		{Columns: []SDUITableColumn{{Key: "updated", Label: "更新时间", Type: "dateish"}}, Rows: []map[string]string{}},
+		{Columns: []SDUITableColumn{{Key: "title", Label: "任务", Align: "wide"}}, Rows: []map[string]string{}},
+		{Columns: []SDUITableColumn{{Key: "title", Label: "任务", Width: -1}}, Rows: []map[string]string{}},
+		{Columns: []SDUITableColumn{{Key: "title", Label: "任务"}}, Rows: []map[string]string{}, PageSize: -1},
+	}
+	for i, tc := range cases {
+		if err := tc.Validate(); err == nil {
+			t.Fatalf("case %d accepted invalid table hints", i)
+		}
+	}
+}
+
 func TestP3ViewPrimitiveProps(t *testing.T) {
 	// chart：series 值长度须 == categories
 	good := SDUIChartProps{ChartType: "bar", Categories: []string{"一月", "二月"}, Series: []SDUIChartSeries{{Name: "GMV", Values: []float64{1, 2}}}}
