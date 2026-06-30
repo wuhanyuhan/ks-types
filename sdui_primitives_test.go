@@ -156,6 +156,7 @@ func TestSDUITableProps_PresentationHintsJSONAndValidate(t *testing.T) {
 		},
 		Rows:              []map[string]string{{"id": "42", "title": "采购合同审查", "status": "warning:待确认", "updated": "2026-06-29T09:00:00Z"}},
 		PageSize:          20,
+		StateKey:          "tasks",
 		Searchable:        &searchable,
 		SearchPlaceholder: "搜索任务、专家或状态",
 		SearchKeys:        []string{"title", "status", "expert"},
@@ -179,6 +180,7 @@ func TestSDUITableProps_PresentationHintsJSONAndValidate(t *testing.T) {
 		`"search_placeholder":"搜索任务、专家或状态"`,
 		`"search_keys":["title","status","expert"]`,
 		`"page_size":20`,
+		`"state_key":"tasks"`,
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing %s in %s", want, got)
@@ -192,11 +194,60 @@ func TestSDUITableProps_PresentationHintsValidateRejectsInvalidValues(t *testing
 		{Columns: []SDUITableColumn{{Key: "title", Label: "任务", Align: "wide"}}, Rows: []map[string]string{}},
 		{Columns: []SDUITableColumn{{Key: "title", Label: "任务", Width: -1}}, Rows: []map[string]string{}},
 		{Columns: []SDUITableColumn{{Key: "title", Label: "任务"}}, Rows: []map[string]string{}, PageSize: -1},
+		{Columns: []SDUITableColumn{{Key: "title", Label: "任务"}}, Rows: []map[string]string{}, StateKey: "task/list"},
 	}
 	for i, tc := range cases {
 		if err := tc.Validate(); err == nil {
 			t.Fatalf("case %d accepted invalid table hints", i)
 		}
+	}
+}
+
+func TestConsoleViewMeta_JSONAndValidate(t *testing.T) {
+	meta := ConsoleViewMeta{
+		Title: "任务 #72",
+		Breadcrumbs: []ConsoleBreadcrumb{
+			{
+				Label: "任务队列",
+				Route: &SDUIConsoleRouteTarget{
+					ViewKey:   "tasks",
+					ActiveNav: "tasks",
+					Params:    map[string]string{"tbl_tasks_page": "3"},
+				},
+			},
+			{Label: "任务 #72"},
+		},
+		ReturnTo: &SDUIConsoleRouteTarget{
+			ViewKey:   "tasks",
+			ActiveNav: "tasks",
+			Params:    map[string]string{"tbl_tasks_page": "3"},
+		},
+	}
+	if err := meta.Validate(); err != nil {
+		t.Fatalf("valid console meta rejected: %v", err)
+	}
+	b, err := json.Marshal(meta)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	got := string(b)
+	for _, want := range []string{
+		`"title":"任务 #72"`,
+		`"breadcrumbs"`,
+		`"label":"任务队列"`,
+		`"return_to"`,
+		`"tbl_tasks_page":"3"`,
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %s in %s", want, got)
+		}
+	}
+}
+
+func TestConsoleViewMeta_ValidateRejectsEmptyBreadcrumbLabel(t *testing.T) {
+	meta := ConsoleViewMeta{Breadcrumbs: []ConsoleBreadcrumb{{Label: ""}}}
+	if err := meta.Validate(); err == nil {
+		t.Fatal("empty breadcrumb label accepted")
 	}
 }
 

@@ -234,6 +234,7 @@ export interface SDUITableProps {
   primary_action?: SDUITableActionTemplate;
   row_actions?: SDUITableActionTemplate[];
   page_size?: number /* int */;
+  state_key?: string;
   searchable?: boolean;
   search_placeholder?: string;
   search_keys?: string[];
@@ -258,6 +259,22 @@ export interface SDUIConsoleRouteTarget {
   params?: { [key: string]: string};
   active_nav?: string;
   replace?: boolean;
+}
+/**
+ * ConsoleBreadcrumb 描述宿主 console 外层面包屑。Route 为空表示当前页叶子节点。
+ */
+export interface ConsoleBreadcrumb {
+  label: string;
+  route?: SDUIConsoleRouteTarget;
+}
+/**
+ * ConsoleViewMeta 是 squad console view 返回给宿主 shell 的页面元信息。
+ * 宿主负责把它渲染为外层 PageHeader / breadcrumb，不要求各 squad 在 SDUI 树内放返回按钮。
+ */
+export interface ConsoleViewMeta {
+  title?: string;
+  breadcrumbs?: ConsoleBreadcrumb[];
+  return_to?: SDUIConsoleRouteTarget;
 }
 /**
  * SDUIActionIntent 是 typed 交互意图（禁散文意图 + 前端字符串解析）。

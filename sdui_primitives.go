@@ -151,6 +151,7 @@ type SDUITableProps struct {
 	PrimaryAction     *SDUITableActionTemplate  `json:"primary_action,omitempty"`
 	RowActions        []SDUITableActionTemplate `json:"row_actions,omitempty"`
 	PageSize          int                       `json:"page_size,omitempty"`
+	StateKey          string                    `json:"state_key,omitempty"`
 	Searchable        *bool                     `json:"searchable,omitempty"`
 	SearchPlaceholder string                    `json:"search_placeholder,omitempty"`
 	SearchKeys        []string                  `json:"search_keys,omitempty"`
@@ -178,6 +179,9 @@ func (p SDUITableProps) Validate() error {
 	if p.PageSize < 0 {
 		return fmt.Errorf("table.page_size negative: %d", p.PageSize)
 	}
+	if p.StateKey != "" && !isConsoleStateKey(p.StateKey) {
+		return fmt.Errorf("table.state_key invalid: %q", p.StateKey)
+	}
 	if p.PrimaryAction != nil && p.PrimaryAction.Action.ActionID == "" {
 		return fmt.Errorf("table.primary_action.action.action_id empty")
 	}
@@ -187,6 +191,22 @@ func (p SDUITableProps) Validate() error {
 		}
 	}
 	return nil
+}
+
+func isConsoleStateKey(value string) bool {
+	for _, r := range value {
+		if r >= 'a' && r <= 'z' {
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+		if r == '_' || r == '-' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 type SDUIStatusBadgeProps struct {
@@ -230,6 +250,29 @@ type SDUIConsoleRouteTarget struct {
 	Params    map[string]string `json:"params,omitempty"`
 	ActiveNav string            `json:"active_nav,omitempty"`
 	Replace   bool              `json:"replace,omitempty"`
+}
+
+// ConsoleBreadcrumb 描述宿主 console 外层面包屑。Route 为空表示当前页叶子节点。
+type ConsoleBreadcrumb struct {
+	Label string                  `json:"label"`
+	Route *SDUIConsoleRouteTarget `json:"route,omitempty"`
+}
+
+// ConsoleViewMeta 是 squad console view 返回给宿主 shell 的页面元信息。
+// 宿主负责把它渲染为外层 PageHeader / breadcrumb，不要求各 squad 在 SDUI 树内放返回按钮。
+type ConsoleViewMeta struct {
+	Title       string                  `json:"title,omitempty"`
+	Breadcrumbs []ConsoleBreadcrumb     `json:"breadcrumbs,omitempty"`
+	ReturnTo    *SDUIConsoleRouteTarget `json:"return_to,omitempty"`
+}
+
+func (m ConsoleViewMeta) Validate() error {
+	for i, item := range m.Breadcrumbs {
+		if item.Label == "" {
+			return fmt.Errorf("console_meta.breadcrumbs[%d].label empty", i)
+		}
+	}
+	return nil
 }
 
 // SDUIActionIntent 是 typed 交互意图（禁散文意图 + 前端字符串解析）。
