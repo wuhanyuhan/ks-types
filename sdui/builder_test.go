@@ -93,6 +93,16 @@ func TestP3Builders(t *testing.T) {
 	if snap.Data.Kind != kstypes.DataSourceTeamProgressSnapshot {
 		t.Fatalf("war-room snapshot kind: %s", snap.Data.Kind)
 	}
+	taskCollaboration := sdui.TaskCollaborationSnapshot("run-3")
+	if taskCollaboration.Type != kstypes.PrimitiveWarRoom || taskCollaboration.Data == nil {
+		t.Fatalf("task collaboration node malformed: %+v", taskCollaboration)
+	}
+	if taskCollaboration.Data.Kind != kstypes.DataSourceTaskCollaborationSnapshot {
+		t.Fatalf("task collaboration data kind: %s", taskCollaboration.Data.Kind)
+	}
+	if taskCollaboration.Data.Params["run_id"] != "run-3" {
+		t.Fatalf("task collaboration run_id param: %+v", taskCollaboration.Data.Params)
+	}
 	shell := sdui.ConsoleShell(kstypes.SDUIConsoleShellProps{Nav: kstypes.NavTree{Items: []kstypes.NavItem{{Key: "d", Label: "总览", Kind: kstypes.NavKindSDUI}}}})
 	if shell.Type != kstypes.PrimitiveConsoleShell {
 		t.Fatalf("console-shell type: %s", shell.Type)

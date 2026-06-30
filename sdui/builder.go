@@ -122,3 +122,9 @@ func WarRoomSnapshot(runID string) kstypes.UINode {
 	return kstypes.UINode{Type: kstypes.PrimitiveWarRoom, Data: &kstypes.UIDataSource{
 		Kind: kstypes.DataSourceTeamProgressSnapshot, Params: map[string]string{"run_id": runID}}}
 }
+
+// TaskCollaborationSnapshot：任务协作详情静态快照节点（data.kind=task_collaboration_snapshot）。
+func TaskCollaborationSnapshot(runID string) kstypes.UINode {
+	return kstypes.UINode{Type: kstypes.PrimitiveWarRoom, Data: &kstypes.UIDataSource{
+		Kind: kstypes.DataSourceTaskCollaborationSnapshot, Params: map[string]string{"run_id": runID}}}
+}

@@ -30,4 +30,7 @@ func TestP3PrimitivesRegistered(t *testing.T) {
 	if DataSourceTeamProgressSnapshot != "team_progress_snapshot" {
 		t.Errorf("snapshot data source kind wire value drift: %q", DataSourceTeamProgressSnapshot)
 	}
+	if DataSourceTaskCollaborationSnapshot != "task_collaboration_snapshot" {
+		t.Errorf("task collaboration data source kind wire value drift: %q", DataSourceTaskCollaborationSnapshot)
+	}
 }

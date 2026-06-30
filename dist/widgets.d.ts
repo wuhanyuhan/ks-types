@@ -72,6 +72,11 @@ export const DataSourceTeamProgressStream = "team_progress_stream";
  * （花名册 + 交付物 + 决策记录 + 终态摘要），用 war-room 静态模式渲染（不订阅 SSE）。
  */
 export const DataSourceTeamProgressSnapshot = "team_progress_snapshot";
+/**
+ * DataSourceTaskCollaborationSnapshot：订阅某 run 的「任务协作详情快照」（Params={run_id}）。
+ * 前端经反代一次性 GET squad /collaboration，按专家输入、处理、输出、阻塞和产物渲染任务详情。
+ */
+export const DataSourceTaskCollaborationSnapshot = "task_collaboration_snapshot";
 
 //////////
 // source: sdui_primitives.go
