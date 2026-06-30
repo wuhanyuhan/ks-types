@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestSDUIPrimitiveSchemas_Coverage(t *testing.T) {
@@ -68,6 +70,27 @@ func TestSDUIButtonProps_Validate(t *testing.T) {
 	if err := (SDUIButtonProps{Label: "确认", Action: SDUIActionIntent{}}).Validate(); err == nil {
 		t.Error("empty action_id accepted")
 	}
+}
+
+func TestConsoleFileActionIntentConstants(t *testing.T) {
+	require.Equal(t, "console.copy", SDUIActionIntentConsoleCopy)
+	require.Equal(t, "console.file.open", SDUIActionIntentConsoleFileOpen)
+	require.Equal(t, "console.file.download", SDUIActionIntentConsoleFileDownload)
+}
+
+func TestSDUIButtonProps_ValidateDisabledAndIcon(t *testing.T) {
+	props := SDUIButtonProps{
+		Label:    "下载文件",
+		Icon:     "download",
+		Disabled: true,
+		Tooltip:  "缺少 Keystone file_id",
+		Action: SDUIActionIntent{
+			ActionID: "download-file",
+			Intent:   SDUIActionIntentConsoleFileDownload,
+			Payload:  map[string]string{"file_id": ""},
+		},
+	}
+	require.NoError(t, props.Validate())
 }
 
 func TestSDUIActionIntent_ConsoleNavigateJSON(t *testing.T) {

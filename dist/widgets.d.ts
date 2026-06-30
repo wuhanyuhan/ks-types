@@ -259,6 +259,9 @@ export interface SDUIEmptyStateProps {
 }
 export const SDUIActionIntentConsoleNavigate = "console.navigate";
 export const SDUIActionIntentConsoleBack = "console.back";
+export const SDUIActionIntentConsoleCopy = "console.copy";
+export const SDUIActionIntentConsoleFileOpen = "console.file.open";
+export const SDUIActionIntentConsoleFileDownload = "console.file.download";
 export interface SDUIConsoleRouteTarget {
   view_key: string;
   params?: { [key: string]: string};
@@ -303,7 +306,10 @@ export interface SDUITableActionTemplate {
 }
 export interface SDUIButtonProps {
   label: string;
+  icon?: string;
   variant?: string; // default | primary | destructive | ghost
+  disabled?: boolean;
+  tooltip?: string;
   action: SDUIActionIntent;
 }
 export interface SDUIFormField {

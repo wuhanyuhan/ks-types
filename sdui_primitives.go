@@ -241,8 +241,11 @@ func (p SDUIEmptyStateProps) Validate() error { return nil }
 // --- 交互原语 props ---
 
 const (
-	SDUIActionIntentConsoleNavigate = "console.navigate"
-	SDUIActionIntentConsoleBack     = "console.back"
+	SDUIActionIntentConsoleNavigate     = "console.navigate"
+	SDUIActionIntentConsoleBack         = "console.back"
+	SDUIActionIntentConsoleCopy         = "console.copy"
+	SDUIActionIntentConsoleFileOpen     = "console.file.open"
+	SDUIActionIntentConsoleFileDownload = "console.file.download"
 )
 
 type SDUIConsoleRouteTarget struct {
@@ -296,9 +299,12 @@ type SDUITableActionTemplate struct {
 }
 
 type SDUIButtonProps struct {
-	Label   string           `json:"label"`
-	Variant string           `json:"variant,omitempty"` // default | primary | destructive | ghost
-	Action  SDUIActionIntent `json:"action"`
+	Label    string           `json:"label"`
+	Icon     string           `json:"icon,omitempty"`
+	Variant  string           `json:"variant,omitempty"` // default | primary | destructive | ghost
+	Disabled bool             `json:"disabled,omitempty"`
+	Tooltip  string           `json:"tooltip,omitempty"`
+	Action   SDUIActionIntent `json:"action"`
 }
 
 func (p SDUIButtonProps) Validate() error {
