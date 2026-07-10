@@ -64,6 +64,10 @@ conflicts:
   apps:
     - id: old-translator
       reason: 端口冲突
+public_http:
+  paths:
+    - /healthz
+    - /api/publisher/plugin/*
 permissions:
   network:
     level: restricted

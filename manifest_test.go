@@ -98,6 +98,11 @@ func TestParseAppSpec_Valid(t *testing.T) {
 	if len(m.Conflicts.Apps) != 1 || m.Conflicts.Apps[0].ID != "old-translator" {
 		t.Errorf("conflicts.apps: got %+v", m.Conflicts.Apps)
 	}
+
+	// public_http.paths[]
+	if len(m.PublicHTTP.Paths) != 2 || m.PublicHTTP.Paths[0] != "/healthz" || m.PublicHTTP.Paths[1] != "/api/publisher/plugin/*" {
+		t.Errorf("public_http.paths: got %+v", m.PublicHTTP.Paths)
+	}
 }
 
 func TestParseAppSpec_IncompleteFieldsParseOK(t *testing.T) {
@@ -1052,6 +1057,49 @@ func TestRequiresSpec_ValidateCanonicalNameRegex(t *testing.T) {
 				t.Errorf("requires.canonical_name=%q valid=%v want %v (err=%v)", c.name, gotValid, c.valid, err)
 			}
 		})
+	}
+}
+
+// TestPublicHTTPSpec_Validate 覆盖 public_http 白名单路径校验：精确/前缀通配合法；
+// 缺前导斜杠、.. 穿越、根通配、中段通配、query/fragment、空白、空路径、重复、超上限均应拒绝。
+func TestPublicHTTPSpec_Validate(t *testing.T) {
+	cases := []struct {
+		name  string
+		paths []string
+		valid bool
+	}{
+		{"exact", []string{"/healthz"}, true},
+		{"prefix-wildcard", []string{"/api/publisher/plugin/*"}, true},
+		{"exact-plus-wildcard", []string{"/healthz", "/api/publisher/oauth/*"}, true},
+		{"empty-list", nil, true},
+		{"missing-leading-slash", []string{"healthz"}, false},
+		{"dotdot-traversal", []string{"/api/../secret"}, false},
+		{"root-wildcard", []string{"/*"}, false},
+		{"mid-wildcard", []string{"/api/*/plugin"}, false},
+		{"query", []string{"/api?x=1"}, false},
+		{"fragment", []string{"/api#frag"}, false},
+		{"whitespace", []string{"/api /plugin"}, false},
+		{"empty-path", []string{""}, false},
+		{"duplicate", []string{"/healthz", "/healthz"}, false},
+	}
+	for _, c := range cases {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			err := PublicHTTPSpec{Paths: c.paths}.Validate()
+			gotValid := err == nil
+			if gotValid != c.valid {
+				t.Errorf("public_http.paths=%v valid=%v want %v (err=%v)", c.paths, gotValid, c.valid, err)
+			}
+		})
+	}
+
+	// 超上限（长度检查先于逐条校验触发，条目内容不影响结论）。
+	over := make([]string, maxPublicHTTPPaths+1)
+	for i := range over {
+		over[i] = "/p"
+	}
+	if err := (PublicHTTPSpec{Paths: over}).Validate(); err == nil {
+		t.Errorf("期望超过 %d 条上限校验失败", maxPublicHTTPPaths)
 	}
 }
 

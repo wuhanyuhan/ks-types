@@ -106,6 +106,11 @@ type AppSpec struct {
 	Requires RequiresSpec `yaml:"requires,omitempty" json:"requires,omitempty"`
 	// Conflicts 声明应用级互斥（同时安装会冲突的应用），保留应用级语义。
 	Conflicts ConflictsSpec `yaml:"conflicts,omitempty" json:"conflicts,omitempty"`
+	// PublicHTTP 声明应用容器上无需 Keystone 登录态即可经平台反代直达的 HTTP 路径白名单。
+	// 用途：浏览器扩展、离线安装包、配对页等第三方客户端不持有 Keystone 会话，无法走
+	// config-ui/fullpage 那条注入凭据的反代。平台据此暴露一条纯透传路由（不注入任何 Keystone 凭据），
+	// 业务鉴权完全由 app 自身承担（如一次性配对 token、scoped JWT）。留空=不暴露（安全默认）。
+	PublicHTTP PublicHTTPSpec `yaml:"public_http,omitempty" json:"public_http,omitempty"`
 	// ManagedResources 声明由 Keystone 在安装时统一分配和注入的托管资源。
 	// 应用继续拥有自己的 schema/migration/业务数据语义，平台只负责基础资源
 	// 生命周期、隔离、台账与运行时注入。
@@ -598,6 +603,69 @@ type ConflictsAppItem struct {
 	Reason string `yaml:"reason,omitempty" json:"reason,omitempty"`
 }
 
+const maxPublicHTTPPaths = 32
+
+// PublicHTTPSpec 声明应用容器上可无 Keystone 登录态公开直达的 HTTP 路径白名单。
+type PublicHTTPSpec struct {
+	// Paths 白名单。每条要么精确绝对路径（如 /healthz），要么以 /* 结尾的前缀通配
+	// （如 /api/publisher/plugin/*，匹配 /api/publisher/plugin 及其下所有子路径）。
+	Paths []string `yaml:"paths,omitempty" json:"paths,omitempty"`
+}
+
+var publicHTTPPathSegmentRegex = regexp.MustCompile(`^(/[A-Za-z0-9._~!$&'()+,;=:@%-]+)+$`)
+
+// Validate 校验 public_http 白名单：条数上限、逐条路径合法、无重复。
+func (s PublicHTTPSpec) Validate() error {
+	if len(s.Paths) > maxPublicHTTPPaths {
+		return fmt.Errorf("public_http.paths 条目数 %d 超过上限 %d", len(s.Paths), maxPublicHTTPPaths)
+	}
+	seen := make(map[string]struct{}, len(s.Paths))
+	for i, raw := range s.Paths {
+		if err := validatePublicHTTPPath(raw); err != nil {
+			return fmt.Errorf("public_http.paths[%d]: %w", i, err)
+		}
+		if _, dup := seen[raw]; dup {
+			return fmt.Errorf("public_http.paths[%d]: 重复条目 %q", i, raw)
+		}
+		seen[raw] = struct{}{}
+	}
+	return nil
+}
+
+// validatePublicHTTPPath 校验单条白名单路径：绝对路径、无空白/query/fragment/穿越，
+// 通配符 * 只允许作为末段 /*（不允许根通配 /*）。
+func validatePublicHTTPPath(raw string) error {
+	if raw == "" {
+		return fmt.Errorf("路径为空")
+	}
+	if raw != strings.TrimSpace(raw) || strings.ContainsAny(raw, " \t\r\n") {
+		return fmt.Errorf("路径 %q 不得含空白", raw)
+	}
+	if !strings.HasPrefix(raw, "/") {
+		return fmt.Errorf("路径 %q 必须以 / 开头", raw)
+	}
+	if strings.ContainsAny(raw, "?#") {
+		return fmt.Errorf("路径 %q 不得含 query(?) 或 fragment(#)", raw)
+	}
+	if strings.Contains(raw, "..") {
+		return fmt.Errorf("路径 %q 不得含 .. 路径穿越", raw)
+	}
+	exact := raw
+	if raw == "/*" {
+		return fmt.Errorf("路径 %q 过宽（不允许根通配，会暴露整个容器）", raw)
+	}
+	if strings.HasSuffix(raw, "/*") {
+		exact = strings.TrimSuffix(raw, "/*")
+	}
+	if strings.Contains(exact, "*") {
+		return fmt.Errorf("路径 %q 的通配符 * 只能作为末段 /*", raw)
+	}
+	if !publicHTTPPathSegmentRegex.MatchString(exact) {
+		return fmt.Errorf("路径 %q 含非法字符或空路径段", raw)
+	}
+	return nil
+}
+
 // ParseAppSpec 从 YAML 字节解析 AppSpec
 func ParseAppSpec(data []byte) (*AppSpec, error) {
 	var m AppSpec
@@ -695,6 +763,9 @@ func (m *AppSpec) Validate() error {
 	}
 	if err := m.Conflicts.Validate(); err != nil {
 		return fmt.Errorf("manifest: conflicts: %w", err)
+	}
+	if err := m.PublicHTTP.Validate(); err != nil {
+		return fmt.Errorf("manifest: public_http: %w", err)
 	}
 
 	if err := m.ManagedResources.Validate(); err != nil {
