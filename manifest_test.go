@@ -1071,6 +1071,7 @@ func TestPublicHTTPSpec_Validate(t *testing.T) {
 		{"exact", []string{"/healthz"}, true},
 		{"prefix-wildcard", []string{"/api/publisher/plugin/*"}, true},
 		{"exact-plus-wildcard", []string{"/healthz", "/api/publisher/oauth/*"}, true},
+		{"dotted-segment", []string{"/.well-known/acme-challenge/*"}, true},
 		{"empty-list", nil, true},
 		{"missing-leading-slash", []string{"healthz"}, false},
 		{"dotdot-traversal", []string{"/api/../secret"}, false},
@@ -1100,6 +1101,44 @@ func TestPublicHTTPSpec_Validate(t *testing.T) {
 	}
 	if err := (PublicHTTPSpec{Paths: over}).Validate(); err == nil {
 		t.Errorf("期望超过 %d 条上限校验失败", maxPublicHTTPPaths)
+	}
+}
+
+// TestPublicHTTPSpec_ValidateRejectsEncodedBypass 锁死编码类绕过。
+// 字面量 .. 一查就中，但 %2e%2e / %252e%252e / %2f / %00 只有禁掉 % 本身才堵得死；
+// 这些条目一旦进了白名单，反代解码后就会落到白名单之外的路径上。
+func TestPublicHTTPSpec_ValidateRejectsEncodedBypass(t *testing.T) {
+	bypasses := []struct {
+		name string
+		path string
+	}{
+		{"encoded-dotdot-lower", "/%2e%2e/etc/passwd"},
+		{"encoded-dotdot-upper", "/api/%2E%2E/admin"},
+		{"double-encoded-dotdot", "/api/%252e%252e/admin"},
+		{"encoded-slash", "/api%2fadmin"},
+		{"null-byte", "/healthz%00.png"},
+		{"encoded-in-wildcard", "/api/%2e%2e/*"},
+		{"semicolon-path-param", "/healthz;jsessionid=x"},
+	}
+	for _, c := range bypasses {
+		c := c
+		t.Run(c.name, func(t *testing.T) {
+			if err := (PublicHTTPSpec{Paths: []string{c.path}}).Validate(); err == nil {
+				t.Errorf("路径 %q 必须被拒绝：它能被反代解码成白名单之外的路径", c.path)
+			}
+		})
+	}
+}
+
+// TestPublicHTTPSpec_ValidateRejectsAmbiguousPath 锁死会造成匹配歧义的写法：
+// 结尾斜杠（/a 与 /a/ 语义不清）与超长路径。
+func TestPublicHTTPSpec_ValidateRejectsAmbiguousPath(t *testing.T) {
+	if err := (PublicHTTPSpec{Paths: []string{"/healthz/"}}).Validate(); err == nil {
+		t.Error("结尾斜杠路径 /healthz/ 必须被拒绝")
+	}
+	long := "/" + strings.Repeat("a", maxPublicHTTPPathLen)
+	if err := (PublicHTTPSpec{Paths: []string{long}}).Validate(); err == nil {
+		t.Errorf("超过 %d 字符的路径必须被拒绝", maxPublicHTTPPathLen)
 	}
 }
 

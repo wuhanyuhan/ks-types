@@ -603,16 +603,32 @@ type ConflictsAppItem struct {
 	Reason string `yaml:"reason,omitempty" json:"reason,omitempty"`
 }
 
-const maxPublicHTTPPaths = 32
+const (
+	maxPublicHTTPPaths   = 32
+	maxPublicHTTPPathLen = 256
+)
 
 // PublicHTTPSpec 声明应用容器上可无 Keystone 登录态公开直达的 HTTP 路径白名单。
+//
+// 匹配契约（规范性，反代实现方必须遵守）：
+//   - 反代必须先对请求路径做百分号解码与 path.Clean 归一化，用归一化结果参与匹配，
+//     且转发给应用的也必须是归一化后的路径；若解码后仍含 .. 或 %00，直接拒绝，不得放行。
+//     否则 /api/x/%2e%2e/%2e%2e/admin 会以"匹配前缀 /api/x/*"通过、却以 /api/admin 到达应用。
+//   - 前缀通配 /a/b/* 匹配 /a/b 本身及其段边界下的子路径；不得实现成裸字符串前缀匹配，
+//     否则 /a/bc 这类同前缀异段的路径会被误放行。
+//   - 路径大小写敏感：/healthz 与 /HealthZ 是两条不同规则，不做大小写折叠。
+//   - 白名单只约束路径，不区分 HTTP method：一条规则会公开该路径上的所有方法
+//     （含 POST/DELETE）。只读端点请在应用侧自行拒绝非 GET 请求。
 type PublicHTTPSpec struct {
 	// Paths 白名单。每条要么精确绝对路径（如 /healthz），要么以 /* 结尾的前缀通配
-	// （如 /api/publisher/plugin/*，匹配 /api/publisher/plugin 及其下所有子路径）。
+	// （如 /api/publisher/plugin/*）。路径不得带结尾斜杠、百分号编码、query/fragment。
 	Paths []string `yaml:"paths,omitempty" json:"paths,omitempty"`
 }
 
-var publicHTTPPathSegmentRegex = regexp.MustCompile(`^(/[A-Za-z0-9._~!$&'()+,;=:@%-]+)+$`)
+// publicHTTPPathSegmentRegex 单个路径段允许的字符。刻意收得比 RFC 3986 的 pchar 窄：
+// 白名单条目没有理由出现百分号编码（%）或 sub-delims（; 等易被后端解释成路径参数），
+// 排除它们可以从源头杜绝编码穿越与解析歧义。
+var publicHTTPPathSegmentRegex = regexp.MustCompile(`^(/[A-Za-z0-9._~-]+)+$`)
 
 // Validate 校验 public_http 白名单：条数上限、逐条路径合法、无重复。
 func (s PublicHTTPSpec) Validate() error {
@@ -632,11 +648,14 @@ func (s PublicHTTPSpec) Validate() error {
 	return nil
 }
 
-// validatePublicHTTPPath 校验单条白名单路径：绝对路径、无空白/query/fragment/穿越，
-// 通配符 * 只允许作为末段 /*（不允许根通配 /*）。
+// validatePublicHTTPPath 校验单条白名单路径：绝对路径、长度受限、无空白/query/fragment/
+// 百分号编码/穿越/结尾斜杠，通配符 * 只允许作为末段 /*（不允许根通配 /*）。
 func validatePublicHTTPPath(raw string) error {
 	if raw == "" {
 		return fmt.Errorf("路径为空")
+	}
+	if len(raw) > maxPublicHTTPPathLen {
+		return fmt.Errorf("路径长度 %d 超过上限 %d", len(raw), maxPublicHTTPPathLen)
 	}
 	if raw != strings.TrimSpace(raw) || strings.ContainsAny(raw, " \t\r\n") {
 		return fmt.Errorf("路径 %q 不得含空白", raw)
@@ -646,6 +665,11 @@ func validatePublicHTTPPath(raw string) error {
 	}
 	if strings.ContainsAny(raw, "?#") {
 		return fmt.Errorf("路径 %q 不得含 query(?) 或 fragment(#)", raw)
+	}
+	// 必须先于 .. 检查之外单独拦截：字面量 .. 好查，但 %2e%2e / %252e%252e / %2f / %00
+	// 这些编码变体只有禁掉 % 本身才能一次性堵死。
+	if strings.Contains(raw, "%") {
+		return fmt.Errorf("路径 %q 不得含百分号编码（%% 可构造 %%2e%%2e 穿越、%%2f 编码斜杠、%%00 空字节）", raw)
 	}
 	if strings.Contains(raw, "..") {
 		return fmt.Errorf("路径 %q 不得含 .. 路径穿越", raw)
@@ -660,8 +684,11 @@ func validatePublicHTTPPath(raw string) error {
 	if strings.Contains(exact, "*") {
 		return fmt.Errorf("路径 %q 的通配符 * 只能作为末段 /*", raw)
 	}
+	if strings.HasSuffix(exact, "/") {
+		return fmt.Errorf("路径 %q 不得以 / 结尾（/a 与 /a/ 会导致匹配歧义）", raw)
+	}
 	if !publicHTTPPathSegmentRegex.MatchString(exact) {
-		return fmt.Errorf("路径 %q 含非法字符或空路径段", raw)
+		return fmt.Errorf("路径 %q 含非法字符或空路径段（仅允许 A-Za-z0-9 . _ ~ - 与 / 分隔）", raw)
 	}
 	return nil
 }
