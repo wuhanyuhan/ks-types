@@ -2,6 +2,8 @@ package kstypes
 
 import (
 	"fmt"
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
@@ -603,6 +605,8 @@ type ConflictsAppItem struct {
 	Reason string `yaml:"reason,omitempty" json:"reason,omitempty"`
 }
 
+// public_http 白名单规模上限。只在 manifest 校验期生效（反代按已校验的白名单工作，
+// 无需重复设限），故不导出。
 const (
 	maxPublicHTTPPaths   = 32
 	maxPublicHTTPPathLen = 256
@@ -610,46 +614,101 @@ const (
 
 // PublicHTTPSpec 声明应用容器上可无 Keystone 登录态公开直达的 HTTP 路径白名单。
 //
-// 匹配契约（规范性，反代实现方必须遵守）：
-//   - 反代必须先对请求路径做百分号解码与 path.Clean 归一化，用归一化结果参与匹配，
-//     且转发给应用的也必须是归一化后的路径；若解码后仍含 .. 或 %00，直接拒绝，不得放行。
-//     否则 /api/x/%2e%2e/%2e%2e/admin 会以"匹配前缀 /api/x/*"通过、却以 /api/admin 到达应用。
-//   - 前缀通配 /a/b/* 匹配 /a/b 本身及其段边界下的子路径；不得实现成裸字符串前缀匹配，
-//     否则 /a/bc 这类同前缀异段的路径会被误放行。
-//   - 路径大小写敏感：/healthz 与 /HealthZ 是两条不同规则，不做大小写折叠。
-//   - 白名单只约束路径，不区分 HTTP method：一条规则会公开该路径上的所有方法
-//     （含 POST/DELETE）。只读端点请在应用侧自行拒绝非 GET 请求。
+// 反代请一律调用 Allow 判定，不要自行实现解码 / 归一化 / 前缀匹配：这套匹配的每一步
+// 都对应着一种已知绕过（双重编码、编码斜杠、空字节、裸字符串前缀匹配），各处各写一份
+// 迟早会有一份写漏——而这里写漏的后果是未声明的容器路径被无鉴权公开。
+//
+// 白名单只约束路径，不区分 HTTP method：一条规则会公开该路径上的所有方法（含 POST/DELETE）。
+// 只读端点请在应用侧自行拒绝非 GET 请求。
 type PublicHTTPSpec struct {
 	// Paths 白名单。每条要么精确绝对路径（如 /healthz），要么以 /* 结尾的前缀通配
 	// （如 /api/publisher/plugin/*）。路径不得带结尾斜杠、百分号编码、query/fragment。
+	// 大小写敏感：/healthz 与 /HealthZ 是两条不同规则。
 	Paths []string `yaml:"paths,omitempty" json:"paths,omitempty"`
 }
 
-// publicHTTPPathSegmentRegex 单个路径段允许的字符。刻意收得比 RFC 3986 的 pchar 窄：
-// 白名单条目没有理由出现百分号编码（%）或 sub-delims（; 等易被后端解释成路径参数），
-// 排除它们可以从源头杜绝编码穿越与解析歧义。
-var publicHTTPPathSegmentRegex = regexp.MustCompile(`^(/[A-Za-z0-9._~-]+)+$`)
+// Allow 判定一条原始请求路径是否命中白名单，并返回必须转发给应用的归一化路径。
+//
+// rawPath 传 URL 的路径部分、不含 query/fragment，即 Go 里的 (*url.URL).EscapedPath()。
+//
+// 转发时必须用返回的 forwardPath，而不是原始路径——把它赋给 URL.Path 并清空 URL.RawPath，
+// net/http 会负责重新编码。否则下面这套解码与归一化等于白做：/api/x/%2e%2e/%2e%2e/admin
+// 会以"命中前缀 /api/x/*"放行，却以 /api/admin 到达应用。
+//
+// 拒绝的输入：
+//   - 含 query(?) 或 fragment(#)：说明调用方误传了整个 RequestURI。
+//   - 百分号编码非法，或解码一次后仍含 %：即双重编码（%252e%252e 解一次得 %2e%2e），
+//     它唯一的用途就是骗过只解一次码的匹配。代价是路径里的字面量 % 无法公开，可接受。
+//   - 解码后含空字节或 .. 路径段。
+//
+// s 需已通过 Validate（安装期即已校验），Allow 不再重复校验规则本身。
+func (s PublicHTTPSpec) Allow(rawPath string) (forwardPath string, ok bool) {
+	if strings.ContainsAny(rawPath, "?#") {
+		return "", false
+	}
+	decoded, err := url.PathUnescape(rawPath)
+	if err != nil {
+		return "", false
+	}
+	if strings.Contains(decoded, "%") || strings.ContainsRune(decoded, 0) {
+		return "", false
+	}
+	if !strings.HasPrefix(decoded, "/") {
+		return "", false
+	}
+	for _, seg := range strings.Split(decoded, "/") {
+		if seg == ".." {
+			return "", false
+		}
+	}
+	clean := path.Clean(decoded)
+	for _, rule := range s.Paths {
+		if prefix, isWildcard := strings.CutSuffix(rule, "/*"); isWildcard {
+			// 按段边界匹配：/a/b/* 命中 /a/b 本身及其子路径，但不命中同前缀异段的 /a/bc。
+			if clean == prefix || strings.HasPrefix(clean, prefix+"/") {
+				return clean, true
+			}
+			continue
+		}
+		if clean == rule {
+			return clean, true
+		}
+	}
+	return "", false
+}
+
+// publicHTTPPathRegex 匹配整条去掉 /* 后缀的白名单路径。字符集刻意收得比 RFC 3986 的
+// pchar 窄：白名单条目没有理由出现百分号编码（%）或 sub-delims（; 等易被后端解释成路径
+// 参数），排除它们可以从源头杜绝编码穿越与解析歧义。
+var publicHTTPPathRegex = regexp.MustCompile(`^(/[A-Za-z0-9._~-]+)+$`)
 
 // Validate 校验 public_http 白名单：条数上限、逐条路径合法、无重复。
 func (s PublicHTTPSpec) Validate() error {
 	if len(s.Paths) > maxPublicHTTPPaths {
-		return fmt.Errorf("public_http.paths 条目数 %d 超过上限 %d", len(s.Paths), maxPublicHTTPPaths)
+		return fmt.Errorf("paths 条目数 %d 超过上限 %d", len(s.Paths), maxPublicHTTPPaths)
 	}
 	seen := make(map[string]struct{}, len(s.Paths))
 	for i, raw := range s.Paths {
 		if err := validatePublicHTTPPath(raw); err != nil {
-			return fmt.Errorf("public_http.paths[%d]: %w", i, err)
+			return fmt.Errorf("paths[%d]: %w", i, err)
 		}
 		if _, dup := seen[raw]; dup {
-			return fmt.Errorf("public_http.paths[%d]: 重复条目 %q", i, raw)
+			return fmt.Errorf("paths[%d]: 重复条目 %q", i, raw)
 		}
 		seen[raw] = struct{}{}
 	}
 	return nil
 }
 
-// validatePublicHTTPPath 校验单条白名单路径：绝对路径、长度受限、无空白/query/fragment/
-// 百分号编码/穿越/结尾斜杠，通配符 * 只允许作为末段 /*（不允许根通配 /*）。
+// validatePublicHTTPPath 校验单条白名单路径。
+//
+// 真正兜底的只有两条：长度上限，以及 publicHTTPPathRegex——空串、缺前导斜杠、空白、
+// 百分号编码、query/fragment、通配符、空路径段、结尾斜杠全由正则一并拒掉。前面那些显式
+// 检查删掉任何一条都不会放行新输入，它们的价值只在于把报错说准（"不得含百分号编码" 远比
+// "含非法字符" 有用）。
+//
+// 唯一的例外是 ..：. 在正则字符集内（要放行 /.well-known/...），所以 /api/../secret 是能
+// 过正则的。那一条 strings.Contains 检查是白名单里唯一挡住字面量穿越的东西，不可删。
 func validatePublicHTTPPath(raw string) error {
 	if raw == "" {
 		return fmt.Errorf("路径为空")
@@ -657,7 +716,7 @@ func validatePublicHTTPPath(raw string) error {
 	if len(raw) > maxPublicHTTPPathLen {
 		return fmt.Errorf("路径长度 %d 超过上限 %d", len(raw), maxPublicHTTPPathLen)
 	}
-	if raw != strings.TrimSpace(raw) || strings.ContainsAny(raw, " \t\r\n") {
+	if strings.ContainsAny(raw, " \t\r\n") {
 		return fmt.Errorf("路径 %q 不得含空白", raw)
 	}
 	if !strings.HasPrefix(raw, "/") {
@@ -666,28 +725,23 @@ func validatePublicHTTPPath(raw string) error {
 	if strings.ContainsAny(raw, "?#") {
 		return fmt.Errorf("路径 %q 不得含 query(?) 或 fragment(#)", raw)
 	}
-	// 必须先于 .. 检查之外单独拦截：字面量 .. 好查，但 %2e%2e / %252e%252e / %2f / %00
-	// 这些编码变体只有禁掉 % 本身才能一次性堵死。
 	if strings.Contains(raw, "%") {
 		return fmt.Errorf("路径 %q 不得含百分号编码（%% 可构造 %%2e%%2e 穿越、%%2f 编码斜杠、%%00 空字节）", raw)
 	}
 	if strings.Contains(raw, "..") {
 		return fmt.Errorf("路径 %q 不得含 .. 路径穿越", raw)
 	}
-	exact := raw
 	if raw == "/*" {
 		return fmt.Errorf("路径 %q 过宽（不允许根通配，会暴露整个容器）", raw)
 	}
-	if strings.HasSuffix(raw, "/*") {
-		exact = strings.TrimSuffix(raw, "/*")
-	}
+	exact := strings.TrimSuffix(raw, "/*")
 	if strings.Contains(exact, "*") {
 		return fmt.Errorf("路径 %q 的通配符 * 只能作为末段 /*", raw)
 	}
 	if strings.HasSuffix(exact, "/") {
 		return fmt.Errorf("路径 %q 不得以 / 结尾（/a 与 /a/ 会导致匹配歧义）", raw)
 	}
-	if !publicHTTPPathSegmentRegex.MatchString(exact) {
+	if !publicHTTPPathRegex.MatchString(exact) {
 		return fmt.Errorf("路径 %q 含非法字符或空路径段（仅允许 A-Za-z0-9 . _ ~ - 与 / 分隔）", raw)
 	}
 	return nil
@@ -791,10 +845,10 @@ func (m *AppSpec) Validate() error {
 	if err := m.Conflicts.Validate(); err != nil {
 		return fmt.Errorf("manifest: conflicts: %w", err)
 	}
+
 	if err := m.PublicHTTP.Validate(); err != nil {
 		return fmt.Errorf("manifest: public_http: %w", err)
 	}
-
 	if err := m.ManagedResources.Validate(); err != nil {
 		return fmt.Errorf("manifest: managed_resources: %w", err)
 	}
