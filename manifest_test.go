@@ -98,6 +98,11 @@ func TestParseAppSpec_Valid(t *testing.T) {
 	if len(m.Conflicts.Apps) != 1 || m.Conflicts.Apps[0].ID != "old-translator" {
 		t.Errorf("conflicts.apps: got %+v", m.Conflicts.Apps)
 	}
+
+	// public_http.paths[]
+	if len(m.PublicHTTP.Paths) != 2 || m.PublicHTTP.Paths[0] != "/healthz" || m.PublicHTTP.Paths[1] != "/api/publisher/plugin/*" {
+		t.Errorf("public_http.paths: got %+v", m.PublicHTTP.Paths)
+	}
 }
 
 func TestParseAppSpec_IncompleteFieldsParseOK(t *testing.T) {
@@ -1052,6 +1057,135 @@ func TestRequiresSpec_ValidateCanonicalNameRegex(t *testing.T) {
 				t.Errorf("requires.canonical_name=%q valid=%v want %v (err=%v)", c.name, gotValid, c.valid, err)
 			}
 		})
+	}
+}
+
+// TestPublicHTTPSpec_Validate 覆盖 public_http 白名单路径校验。
+//
+// 三类拒绝值得单独说明：
+//   - 编码绕过：字面量 .. 一查就中，但 %2e%2e / %252e%252e / %2f / %00 只有禁掉 % 本身
+//     才堵得死；这些条目一旦进了白名单，反代解码后就会落到白名单之外的路径上。
+//   - 匹配歧义：结尾斜杠（/a 与 /a/ 语义不清）、中段通配、根通配（会暴露整个容器）。
+//   - 规模上限：单条路径长度与白名单条数。
+func TestPublicHTTPSpec_Validate(t *testing.T) {
+	// 恰好等于长度上限（含前导 /）应放行，多一个字符即拒绝——把边界钉死在两侧。
+	atMaxLen := "/" + strings.Repeat("a", maxPublicHTTPPathLen-1)
+	overMaxPaths := make([]string, maxPublicHTTPPaths+1)
+	for i := range overMaxPaths {
+		overMaxPaths[i] = "/p" // 条数检查先于逐条校验触发，条目内容不影响结论
+	}
+
+	cases := []struct {
+		name  string
+		paths []string
+		valid bool
+	}{
+		{"exact", []string{"/healthz"}, true},
+		{"prefix-wildcard", []string{"/api/publisher/plugin/*"}, true},
+		{"exact-plus-wildcard", []string{"/healthz", "/api/publisher/oauth/*"}, true},
+		{"dotted-segment", []string{"/.well-known/acme-challenge/*"}, true},
+		{"empty-list", nil, true},
+		{"at-max-len", []string{atMaxLen}, true},
+
+		{"missing-leading-slash", []string{"healthz"}, false},
+		{"empty-path", []string{""}, false},
+		{"duplicate", []string{"/healthz", "/healthz"}, false},
+		{"query", []string{"/api?x=1"}, false},
+		{"fragment", []string{"/api#frag"}, false},
+		{"whitespace", []string{"/api /plugin"}, false},
+		{"semicolon-path-param", []string{"/healthz;jsessionid=x"}, false},
+
+		// 编码绕过
+		{"dotdot-traversal", []string{"/api/../secret"}, false},
+		{"encoded-dotdot-lower", []string{"/%2e%2e/etc/passwd"}, false},
+		{"encoded-dotdot-upper", []string{"/api/%2E%2E/admin"}, false},
+		{"double-encoded-dotdot", []string{"/api/%252e%252e/admin"}, false},
+		{"encoded-slash", []string{"/api%2fadmin"}, false},
+		{"null-byte", []string{"/healthz%00.png"}, false},
+		{"encoded-in-wildcard", []string{"/api/%2e%2e/*"}, false},
+
+		// 匹配歧义
+		{"trailing-slash", []string{"/healthz/"}, false},
+		{"mid-wildcard", []string{"/api/*/plugin"}, false},
+		{"root-wildcard", []string{"/*"}, false},
+
+		// 规模上限
+		{"over-max-len", []string{atMaxLen + "a"}, false},
+		{"over-max-paths", overMaxPaths, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := PublicHTTPSpec{Paths: c.paths}.Validate()
+			gotValid := err == nil
+			if gotValid != c.valid {
+				t.Errorf("public_http.paths=%v valid=%v want %v (err=%v)", c.paths, gotValid, c.valid, err)
+			}
+		})
+	}
+}
+
+// TestPublicHTTPSpec_Allow 锁死反代匹配语义。这里的每一条拒绝都对应一种真实绕过手法：
+// 放行了就意味着未进白名单的容器路径被无鉴权公开，所以它们比放行用例更重要。
+func TestPublicHTTPSpec_Allow(t *testing.T) {
+	spec := PublicHTTPSpec{Paths: []string{"/healthz", "/api/publisher/plugin/*"}}
+
+	cases := []struct {
+		name string
+		raw  string
+		want string // 期望转发的归一化路径；"" 表示拒绝
+	}{
+		// 精确规则
+		{"exact", "/healthz", "/healthz"},
+		{"exact-trailing-slash", "/healthz/", "/healthz"},
+		{"exact-case-sensitive", "/HealthZ", ""},
+		{"exact-not-a-prefix-rule", "/healthz/sub", ""},
+
+		// 前缀通配：命中前缀本身与段边界下的子路径
+		{"wildcard-prefix-itself", "/api/publisher/plugin", "/api/publisher/plugin"},
+		{"wildcard-subpath", "/api/publisher/plugin/foo/bar", "/api/publisher/plugin/foo/bar"},
+		// 裸字符串前缀匹配会误放行这两条——必须拒绝
+		{"wildcard-same-prefix-other-segment", "/api/publisher/pluginx", ""},
+		{"wildcard-same-prefix-hyphen", "/api/publisher/plugin-evil", ""},
+
+		{"not-whitelisted", "/admin", ""},
+		{"root", "/", ""},
+		{"empty", "", ""},
+		{"relative", "healthz", ""},
+
+		// 归一化：请求侧的冗余写法要收敛成同一条转发路径
+		{"double-slash", "/api/publisher/plugin//foo", "/api/publisher/plugin/foo"},
+		{"dot-segment", "/api/publisher/plugin/./foo", "/api/publisher/plugin/foo"},
+		// %2f 解码成 / 后仍落在白名单前缀内，放行并转发解码后的路径
+		{"encoded-slash-inside-prefix", "/api/publisher/plugin%2ffoo", "/api/publisher/plugin/foo"},
+
+		// 穿越：解码后逃出白名单前缀
+		{"dotdot", "/api/publisher/plugin/../../admin", ""},
+		{"encoded-dotdot", "/api/publisher/plugin/%2e%2e/%2e%2e/admin", ""},
+		{"encoded-slash-then-dotdot", "/healthz%2f..%2fadmin", ""},
+		// 只解一次码的实现会在这里失守：解出 %2e%2e 不含字面量 ..，被当成不透明段放行，
+		// 转发给应用后应用再解一次就是 /api/admin
+		{"double-encoded-dotdot", "/api/publisher/plugin/%252e%252e/admin", ""},
+
+		{"null-byte", "/healthz%00.png", ""},
+		{"malformed-encoding", "/healthz%zz", ""},
+		{"query-passed-in", "/healthz?x=1", ""},
+		{"fragment-passed-in", "/healthz#frag", ""},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, ok := spec.Allow(c.raw)
+			if ok != (c.want != "") || got != c.want {
+				t.Errorf("Allow(%q) = (%q, %v)，期望 (%q, %v)", c.raw, got, ok, c.want, c.want != "")
+			}
+		})
+	}
+
+	// 空白名单：默认不暴露任何路径。
+	var empty PublicHTTPSpec
+	for _, raw := range []string{"/healthz", "/", "/api/publisher/plugin/foo"} {
+		if _, ok := empty.Allow(raw); ok {
+			t.Errorf("空白名单必须拒绝 %q", raw)
+		}
 	}
 }
 
