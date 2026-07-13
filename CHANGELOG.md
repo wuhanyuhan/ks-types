@@ -2,6 +2,16 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.48.0
+
+### Added
+- `AppSpec.PublicHTTP`（`public_http.paths`）：声明应用容器上**无需 Keystone 登录态**即可经平台反代直达的 HTTP 路径白名单。每条要么精确绝对路径（`/healthz`），要么 `/*` 结尾的前缀通配（`/api/publisher/plugin/*`）。用于浏览器扩展、离线安装包、配对页等不持有 Keystone 会话、走不了 config-ui/fullpage 那条注入凭据反代的第三方客户端；平台据此暴露**纯透传**路由（不注入任何 Keystone 凭据），业务鉴权完全由 app 自己承担（一次性配对 token、scoped JWT 等）。留空 = 不暴露（安全默认）。
+- `PublicHTTPSpec.Validate()`：条数上限 32、单条长度上限 256、去重；拒绝相对路径、结尾斜杠、query/fragment、中段通配、根通配 `/*`（会暴露整个容器），并**拒绝一切百分号编码**——字面量 `..` 好查，但 `%2e%2e` / `%252e%252e` / `%2f` / `%00` 只有禁掉 `%` 本身才堵得死。已接入 `AppSpec.Validate()`。
+- **`PublicHTTPSpec.Allow(rawPath) (forwardPath, ok)`：反代匹配的唯一实现，接入方必读。** 一次调用同时给出放行判定与**必须转发给应用的归一化路径**。反代**不要**自行实现解码 / 归一化 / 前缀匹配：这套匹配的每一步都对应一种已知绕过。转发时必须用返回的 `forwardPath`（赋给 `URL.Path` 并清空 `URL.RawPath`），用原始路径转发会让整套归一化白做——`/api/x/%252e%252e/admin` 会以「命中前缀 `/api/x/*`」放行，却以 `/api/admin` 到达应用；裸字符串前缀匹配则会把 `/api/x-evil` 误判为命中 `/api/x/*`。
+- 注意：白名单只约束路径，**不区分 HTTP method**——一条规则会公开该路径上的所有方法（含 POST/DELETE）。只读端点请在应用侧自行拒绝非 GET 请求。
+
+加法式：未声明 `public_http` 的应用行为完全不变，**无 breaking**。纯 Go 侧字段，不进 tygo / TS widgets 分发，无需 bump `widgets-protocol` tag。
+
 ## v0.43.0
 
 ### Added
