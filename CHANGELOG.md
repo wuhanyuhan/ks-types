@@ -2,6 +2,18 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.49.0
+
+### Added
+- `KSAttachment.FileID`（`file_id`，可选）：应用已通过 `POST /v1/apps/self/files/upload`
+  回存产物时，可携带对应的 `t_files.file_id`。Keystone 能力产物采集会在校验文件归属后
+  直引已有文件行，避免从托管卷二次搬运导致 `t_files` 和“我的空间”重复记录；校验失败
+  或旧版 Keystone 不识别该字段时，仍可回退 `path` 采集。该字段只影响采集去重，附件
+  URL 签发仍使用 `path`。
+
+该变更为加法式可选字段，不填写 `file_id` 的信封行为完全不变，无 breaking；纯 Go 侧字段，
+不进入 tygo / TypeScript widgets 分发，无需更新 `widgets-protocol` tag。
+
 ## v0.48.0
 
 ### Added

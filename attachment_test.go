@@ -12,6 +12,7 @@ func TestKSAttachment_JSON_RoundTrip(t *testing.T) {
 	t.Parallel()
 	in := KSAttachment{
 		Path:         "output/abc.png",
+		FileID:       "3f2a77c1d9e64b0f8c5a12de34ab56cd",
 		MimeType:     "image/png",
 		OriginalName: "abc.png",
 		TTLSeconds:   900,
@@ -23,6 +24,14 @@ func TestKSAttachment_JSON_RoundTrip(t *testing.T) {
 	var out KSAttachment
 	require.NoError(t, json.Unmarshal(raw, &out))
 	assert.Equal(t, in, out)
+}
+
+func TestKSAttachment_FileID_BackwardCompatible(t *testing.T) {
+	t.Parallel()
+	var got KSAttachment
+	require.NoError(t, json.Unmarshal([]byte(`{"path":"out.mp3","mime_type":"audio/mpeg"}`), &got))
+	assert.Empty(t, got.FileID)
+	assert.Equal(t, "out.mp3", got.Path)
 }
 
 func TestKSAttachment_OmitEmpty(t *testing.T) {
