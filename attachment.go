@@ -4,7 +4,11 @@ package kstypes
 // MCP 在工具结果 JSON 中以 KSAttachmentFieldName ("ks_attachments") 字段携带 []KSAttachment。
 // Keystone 内部 mcp proxy 层会拦截识别 → 替换为 []KSAttachmentResolved。
 type KSAttachment struct {
-	Path         string `json:"path"`
+	Path string `json:"path"`
+	// FileID 可选：产物已由 app 主动回存入库时，填写对应的 t_files.file_id。
+	// Keystone 能力产物采集可在校验归属后直引已有文件，避免从托管卷二次搬运；
+	// 校验失败时仍可回退 Path。该字段不改变附件 URL 签发的 Path 契约。
+	FileID       string `json:"file_id,omitempty"`
 	MimeType     string `json:"mime_type,omitempty"`
 	OriginalName string `json:"original_name,omitempty"`
 	TTLSeconds   int    `json:"ttl_seconds,omitempty"`
