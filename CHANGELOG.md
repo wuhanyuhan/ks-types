@@ -2,6 +2,27 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.50.0
+
+### Added
+- `ErrorCategory` / `ToolError` / `NewToolError` / `IsKnownErrorCategory` / `NormalizeErrorCategory`：
+  工具错误契约自 `ks-internal-contracts` **物理下沉**至本仓（新文件 `tool_error.go`，与 `BizError`
+  的 HTTP 业务码维度正交、不并入 `errors.go` 分段）。动因：错误契约要被全生态 MCP 应用消费
+  （squad 系经 ks-squad-framework，普通 ks-mcp-* 经 ks-devkit SDK），性质已是公开协议，而
+  ks-types 是两者唯一公共下层；ks-squad-framework 的依赖纪律「只允许 ks-types」由此对错误
+  契约回归合规。`ks-internal-contracts` 将改为类型别名 re-export，既有下游 import 零破坏。
+- 扩维（治「上游错误误分类」缺陷 F 的类别缺维）：
+  - 新类别 `ErrorCategoryUpstream`（`upstream`）：对端站点 / 第三方 API 故障（如抓取目标 521），
+    与 `dependency`（我方登记下游）划清——不计入我方 5xx 告警，话术不替对方道歉。
+  - `ToolError.Retryable *bool`（`retryable`，可选）：是否值得重试，与类别正交；nil = 未表态。
+  - `ToolError.UpstreamStatus int`（`upstream_status`，可选）：对端原始 HTTP 状态码。
+  - 便捷构造 `NewUpstreamError(status, message)`。
+- `NormalizeErrorCategory` 语义不变（空 / 未知一律归 `internal`，不乐观推断 dependency /
+  upstream——对端故障必须由生产端显式声明）。
+
+加法式：可选维 `omitempty` 缺省不出 wire，旧消费端收到的 payload 与下沉前逐字节一致，
+**无 breaking**。纯 Go 侧类型，不进 tygo / TS widgets 分发，无需 bump `widgets-protocol` tag。
+
 ## v0.49.0
 
 ### Added
