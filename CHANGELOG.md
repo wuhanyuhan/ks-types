@@ -2,6 +2,31 @@
 
 `ks-types` 对外类型契约的变更记录。遵循语义化版本；破坏性变更在条目中标注。
 
+## v0.51.0
+
+### Added
+- `KSAttachmentResolved.FileID`（`file_id`，可选）与 `.ArtifactID`（`artifact_id`，可选）：
+  补齐**既有契约漂移**。keystone `AttachmentResolver.resolveInMap` 在签发 URL 之后会调
+  `ArtifactCapture.CaptureOne` 把产物字节从 app 托管卷搬进 `t_files`，并把得到的
+  `file_id` / `artifact_id` **直接写进同一个 resolved map**——但本结构体一直没有这两个字段，
+  于是所有用它 `DecodeInto` 的消费方都把 keystone 已经发出来的持久句柄静默丢掉了。
+
+  代价是真实的：`ks-squad-framework` 的 imagegen client 解进旧结构体，对每张生成图恒得空
+  `FileID`，采编 squad 的文章封面因此只能存签发 URL；而 `ks-mcp-minimax-media` 申请的
+  `ttl_seconds` **刻意对齐其文件清理周期**（168h），URL 与 app 侧文件同期作废——同一篇稿子
+  隔一周再消费，封面必 404。持久资产其实早就躺在 keystone `t_files` 里，只是拿不到句柄。
+
+  两个字段的时效语义完全不同，消费方**不要混用**：
+  - `URL` 按 `KSAttachment.TTLSeconds` 签发（keystone 缺省仅 15m），是会烂掉的短期引用；
+  - `FileID` 指向 keystone 侧那份持久副本，要落库长存的消费方应存它，需要字节时再经
+    `query.file.download_url` 现换一个新签名 URL。
+
+  采集是 best-effort（要求调用链上有 `ArtifactInvokeContext` 且发起人身份非零，失败只记
+  日志不阻断签发），故两个字段**可能为空**，消费方不得假定一定有值。
+
+加法式：`omitempty` 缺省不出 wire，旧消费端收到的 payload 逐字节不变，**无 breaking**。
+纯 Go 侧类型，不进 tygo / TS widgets 分发，无需 bump `widgets-protocol` tag。
+
 ## v0.50.0
 
 ### Added
